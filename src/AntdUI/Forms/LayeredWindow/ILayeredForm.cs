@@ -19,6 +19,7 @@
 
 using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Drawing;
 using System.Windows.Forms;
 
@@ -27,6 +28,7 @@ namespace AntdUI
     public abstract class ILayeredForm : Form, IMessageFilter
     {
         IntPtr? handle;
+        IntPtr memDc;
         public ILayeredForm()
         {
             SetStyle(
@@ -41,10 +43,8 @@ namespace AntdUI
             Size = new Size(0, 0);
             actionLoadMessage = LoadMessage;
             actionCursor = val => SetCursor(val);
+            memDc = Win32.CreateCompatibleDC(Win32.screenDC);
         }
-
-        [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
-        public virtual bool ShowLeft { get; set; } = false;
 
         protected override void OnHandleCreated(EventArgs e)
         {
@@ -55,9 +55,6 @@ namespace AntdUI
         public Control? PARENT;
         public Func<Keys, bool>? KeyCall;
 
-
-        [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
-        public virtual bool CanLoadMessage { get; set; } = true;
         Action actionLoadMessage;
         public virtual void LoadMessage()
         {
@@ -82,11 +79,13 @@ namespace AntdUI
             FunRun = false;
             Application.RemoveMessageFilter(this);
             base.Dispose(disposing);
+            Win32.Dispose(memDc, ref hBitmap, ref oldBits);
+            if (memDc == IntPtr.Zero) return;
+            Win32.DeleteDC(memDc);
+            memDc = IntPtr.Zero;
         }
 
         public virtual bool UFocus => true;
-
-        public abstract Bitmap PrintBit();
 
         public byte alpha = 10;
 
@@ -158,13 +157,21 @@ namespace AntdUI
 
         #endregion
 
+        public abstract Bitmap PrintBit();
+        public Bitmap Printmap()
+        {
+            RenderCache = false;
+            Win32.Dispose(memDc, ref hBitmap, ref oldBits);
+            return PrintBit();
+        }
+
         public RenderResult Print(bool fore = false)
         {
             if (CanRender(out var handle))
             {
                 try
                 {
-                    using (var bmp = PrintBit())
+                    using (var bmp = Printmap())
                     {
                         if (bmp == null) return RenderResult.Skip;
                         return Render(handle, alpha, bmp, target_rect);
@@ -188,7 +195,22 @@ namespace AntdUI
                 else return RenderResult.Skip;
             }
         }
+        public RenderResult PrintCache(bool fore = false)
+        {
+            if (CanRender(out var handle))
+            {
+                try
+                {
+                    return Render(handle, alpha, target_rect);
+                }
+                catch { }
+                return RenderResult.Error;
+            }
+            else return RenderResult.Skip;
+        }
 
+        public bool RenderCache = false;
+        IntPtr hBitmap, oldBits;
         RenderResult Render(IntPtr handle, byte alpha, Bitmap bmp, Rectangle rect)
         {
             if (InvokeRequired)
@@ -196,11 +218,28 @@ namespace AntdUI
                 try
                 {
                     if (IsDisposed || Disposing) return RenderResult.Skip;
-                    return Invoke(() => Win32.SetBits(bmp, rect, handle, alpha));
+                    if (RenderCache) return Invoke(() => Win32.SetBits(memDc, rect, handle, alpha));
+                    RenderCache = true;
+                    return Invoke(() => Win32.SetBits(memDc, bmp, rect, handle, alpha, out hBitmap, out oldBits));
                 }
                 catch { }
             }
-            return Win32.SetBits(bmp, rect, handle, alpha);
+            if (RenderCache) return Win32.SetBits(memDc, rect, handle, alpha);
+            RenderCache = true;
+            return Win32.SetBits(memDc, bmp, rect, handle, alpha, out hBitmap, out oldBits);
+        }
+        RenderResult Render(IntPtr handle, byte alpha, Rectangle rect)
+        {
+            if (InvokeRequired)
+            {
+                try
+                {
+                    if (IsDisposed || Disposing) return RenderResult.Skip;
+                    return Invoke(() => Win32.SetBits(memDc, rect, handle, alpha));
+                }
+                catch { }
+            }
+            return Win32.SetBits(memDc, rect, handle, alpha);
         }
 
         Action<bool> actionCursor;
@@ -237,7 +276,6 @@ namespace AntdUI
 
         #endregion
 
-        bool switchClose = true;
         int countClose = 0;
         public virtual void IClosing() { }
         public void IClose(bool isdispose = false)
@@ -257,24 +295,45 @@ namespace AntdUI
                     Dispose();
                     return;
                 }
-                //countClose++;
+                countClose++;
                 Close();
             }
             catch { }
         }
 
+        #region 属性
+
         /// <summary>
-        /// 点击外面关闭使能
+        /// 加载后绑定消息
         /// </summary>
-        public virtual bool MessageEnable => false;
-        public virtual bool MessageCloseSub => false;
-        public virtual bool MessageClickMe => true;
+        [Description("加载后绑定消息"), Category("行为"), DefaultValue(true)]
+        public virtual bool CanLoadMessage { get; set; } = true;
+
+        /// <summary>
+        /// 消息使能
+        /// </summary>
+        [Description("消息使能"), Category("行为"), DefaultValue(false)]
+        public virtual bool MessageEnable { get; set; }
+
+        /// <summary>
+        /// 点击子菜单关闭（true后点击子菜单不关闭）
+        /// </summary>
+        [Description("点击子菜单关闭"), Category("行为"), DefaultValue(false)]
+        public virtual bool MessageCloseSub { get; set; }
+
+        /// <summary>
+        /// 点击自己是否关闭（true 点击自己不关闭）
+        /// </summary>
+        [Description("点击自己是否关闭"), Category("行为"), DefaultValue(true)]
+        public virtual bool MessageClickMe { get; set; } = true;
 
         /// <summary>
         /// 鼠标离开关闭
         /// </summary>
-        [DesignerSerializationVisibility(DesignerSerializationVisibility.Visible)]
-        public bool MessageCloseMouseLeave { get; set; }
+        [Description("鼠标离开关闭"), Category("行为"), DefaultValue(false)]
+        public virtual bool MessageCloseMouseLeave { get; set; }
+
+        #endregion
 
         public bool PreFilterMessage(ref System.Windows.Forms.Message m)
         {
@@ -389,6 +448,53 @@ namespace AntdUI
             catch { }
             return count;
         }
+
+        #region 鼠标悬停
+
+        ITask? taskHover;
+        TimeSpan timeHover;
+        Stopwatch hoverStopwatch = new Stopwatch();
+        int oldx = -1, oldy = -1;
+        protected virtual bool CanMouseMove { get; set; }
+        protected override void OnMouseMove(MouseEventArgs e)
+        {
+            base.OnMouseMove(e);
+            if (CanMouseMove)
+            {
+                if (oldx == e.X && oldy == e.Y) return;
+                oldx = e.X;
+                oldy = e.Y;
+                hoverStopwatch.Reset();
+                hoverStopwatch.Start();
+                timeHover = hoverStopwatch.Elapsed + TimeSpan.FromMilliseconds(Config.MouseHoverDelay);
+                if (taskHover == null)
+                {
+                    OnMouseHover(-1, -1);
+                    taskHover = new ITask(this, () =>
+                    {
+                        if (hoverStopwatch.Elapsed < timeHover) return true;
+                        BeginInvoke(() => OnMouseHover(oldx, oldy));
+                        return false;
+                    }, Config.MouseHoverDelay, () => taskHover = null, Config.MouseHoverDelay);
+                }
+            }
+        }
+
+        protected override void OnMouseLeave(EventArgs e)
+        {
+            base.OnMouseLeave(e);
+            taskHover?.Dispose();
+            taskHover = null;
+            hoverStopwatch.Reset();
+            oldx = -1;
+            oldy = -1;
+        }
+
+        protected virtual void OnMouseHover(int x, int y)
+        {
+        }
+
+        #endregion
 
         #region 触屏
 

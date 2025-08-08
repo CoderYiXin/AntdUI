@@ -289,8 +289,8 @@ namespace AntdUI
         /// <summary>
         /// 单元格内间距
         /// </summary>
-        [Description("单元格内间距"), Category("外观"), DefaultValue(null)]
-        public int? GapCell { get; set; }
+        [Description("单元格内间距"), Category("外观"), DefaultValue(6)]
+        public int? GapCell { get; set; } = 6;
 
         [Description("单元格调整高度"), Category("边框"), DefaultValue(null)]
         public bool? CellImpactHeight { get; set; }
@@ -433,17 +433,20 @@ namespace AntdUI
         /// <summary>
         /// 当前获得焦点的列
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public Column? FocusedColumn => focusedCell?.COLUMN;
 
         /// <summary>
         /// 当前获得焦点的行
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public object? FocusedRow => focusedCell?.ROW.RECORD;
 
         CELL? focusedCell;
         /// <summary>
         /// 当前获得焦点的单元格
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public CELL? FocusedCell
         {
             get => focusedCell;
