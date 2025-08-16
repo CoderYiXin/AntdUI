@@ -73,6 +73,7 @@ namespace AntdUI
 
         bool has_check = false;
         Rectangle rect_read, rect_divider;
+        public Rectangle RectRead => rect_read;
         Rectangle LayoutDesign(Rectangle rect)
         {
             rowSummary = 0;
@@ -1184,7 +1185,8 @@ namespace AntdUI
                 else if (cel.ROW.RECORD is System.Data.DataRow datarow)
                 {
                     int col = cel.COLUMN.INDEX_REAL, row = cel.ROW.INDEX_REAL;
-                    datarow[col] = cel.VALUE = value;
+                    if (datarow.Table.Columns.Contains(cel.COLUMN.Key)) datarow[cel.COLUMN.Key] = cel.VALUE = value;
+                    else datarow[col] = cel.VALUE = value;
                     if (dataTmp == null) return;
                     dataTmp.rows[row].SetValue(col, value);
                 }
