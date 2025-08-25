@@ -59,16 +59,13 @@ namespace AntdUI
             return size;
         }
 
+        public static Size SizeEm(this Size size, Font font) => new Size(size.Width + (int)Math.Round(size.Width * 0.135f), size.Height + (int)Math.Round(font.Size * 0.17f));
+
         public static Color ToColor(float alpha, Color color) => ToColor((int)alpha, color);
 
         public static Color ToColorN(float val, Color color) => ToColor((int)(val * color.A), color);
 
-        public static Color ToColor(int alpha, Color color)
-        {
-            if (alpha > 255) alpha = 255;
-            else if (alpha < 0) alpha = 0;
-            return Color.FromArgb(alpha, color);
-        }
+        public static Color ToColor(int alpha, Color color) => Color.FromArgb(Style.rgbbyte(alpha), color);
 
         public static Form? FindPARENT(this Control? control, bool mdi = false)
         {

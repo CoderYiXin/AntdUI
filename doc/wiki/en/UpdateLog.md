@@ -1,5 +1,61 @@
 ﻿[Home](Home.md)・[UpdateLog](UpdateLog.md)・[Config](Config.md)・[Theme](Theme.md)
 
+### `2.1.0` 2025-08-21
+
+- ➕ Native scrollbar adapted to dark mode
+- ➕ New MouseHover Processing
+- ➕ Config MouseHoverDelay
+- ➕ Menu layout attribute refactoring layout
+- ➕ Menu ArrowRatio
+- ➕ Input Ctrl+Back
+- ➕ Alert LoopOverflow、TextAlign
+- ➕ Select WheelModifyEnabled
+- ➕ Button VirtualWidth property
+- ➕ ChatList Theme Properties
+- ➕ ChatList ScrollLine method
+- ➕ ChatList ItemGap
+- ➕ ChatList IsAtBottom / IsAtRight
+- ➕ Table Filter Apply Overload Function
+- ➕ Table Copy Focus Cell Attribute ClipboardCopyFocusdCell
+- ➕ Segmented ItemGap
+- ➕ Tree TreeItem CheckedStrictly
+- ➕ Tree TreeItem FullPath method
+- ➕ Modal ContentPadding
+- ➕ Calendar ItemPaint event
+- ➕ Tabs TextCenter
+- ✍️ Window adaptation for Win7 NoAero
+- ✍️ ContextMenuStrip Win7 submenu exception
+- ✍️ Menu flashing blank dropdown menu
+- ✍️ Menu optimization secondary menu
+- ✍️ Table Keyboard Up and Down Switching
+- ✍️ Table empty data sorting exception
+- ✍️ Table decimal point sorting
+- ✍️ Table FocusedCell switching data not cleared
+- ✍️ Pagination initialization misalignment
+- ✍️ Pagination length 0, modify page number, reset current page
+- ✍️ Modal close button misaligned
+- ✍️ Tabs Page optimized loading
+- ✍️ Steps to optimize milestone mode
+- ✍️ Dropdown screen collision
+- ✍️ ScrollBar margin misalignment
+- ✍️ ChatList optimizes GPT multi text performance
+- 🧹 DatePicker
+- 🧹 TimePicker
+- 🧹 DatePickerRange
+
+### `2.0.17` 2025-08-06
+
+- ➕ Layered cache rendering (performance optimization)
+- ➕ Select AutoPrefixSvg
+- ➕ Table Filter Internationalization
+- ✍️ Drawer flicker optimization
+- ✍️ Modal OnBtns freezes after callback exception
+- ✍️ BorderlessForm just launched without shadows
+- ✍️ Tree Collection Refresh
+- ✍️ The prompt may flash in Menu InlineNoText mode
+- ✍️ Steps to Expand Index Font
+- ✍️ DatePickerRange Click Month
+
 ### `2.0.16` 2025-08-02
 
 - ➕ Table/Segmented/FloatButton Tooltip Delayed Pop Up

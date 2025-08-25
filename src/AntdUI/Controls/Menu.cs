@@ -139,12 +139,59 @@ namespace AntdUI
             {
                 if (_gap == value) return;
                 _gap = value;
-                if (IsHandleCreated)
-                {
-                    ChangeList();
-                    Invalidate();
-                }
+                ChangeList(true);
                 OnPropertyChanged(nameof(Gap));
+            }
+        }
+
+        int? icongap;
+        /// <summary>
+        /// 图标与文字间距比例
+        /// </summary>
+        [Description("图标与文字间距比例"), Category("外观"), DefaultValue(null)]
+        public int? IconGap
+        {
+            get => icongap;
+            set
+            {
+                if (icongap == value) return;
+                icongap = value;
+                ChangeList(true);
+                OnPropertyChanged(nameof(IconGap));
+            }
+        }
+
+        int? _itemMargin;
+        /// <summary>
+        /// 菜单项外间距
+        /// </summary>
+        [Description("菜单项外间距"), Category("外观"), DefaultValue(null)]
+        public int? itemMargin
+        {
+            get => _itemMargin;
+            set
+            {
+                if (_itemMargin == value) return;
+                _itemMargin = value;
+                ChangeList(true);
+                OnPropertyChanged(nameof(itemMargin));
+            }
+        }
+
+        int? _inlineIndent;
+        /// <summary>
+        /// 缩进宽度
+        /// </summary>
+        [Description("缩进宽度"), Category("外观"), DefaultValue(null)]
+        public int? InlineIndent
+        {
+            get => _inlineIndent;
+            set
+            {
+                if (_inlineIndent == value) return;
+                _inlineIndent = value;
+                ChangeList(true);
+                OnPropertyChanged(nameof(InlineIndent));
             }
         }
 
@@ -160,12 +207,25 @@ namespace AntdUI
             {
                 if (iconratio == value) return;
                 iconratio = value;
-                if (IsHandleCreated)
-                {
-                    ChangeList();
-                    Invalidate();
-                }
+                ChangeList(true);
                 OnPropertyChanged(nameof(IconRatio));
+            }
+        }
+
+        float? arrowRatio;
+        /// <summary>
+        /// 箭头比例
+        /// </summary>
+        [Description("箭头比例"), Category("外观"), DefaultValue(null)]
+        public float? ArrowRatio
+        {
+            get => arrowRatio;
+            set
+            {
+                if (arrowRatio == value) return;
+                arrowRatio = value;
+                ChangeList(true);
+                OnPropertyChanged(nameof(ArrowRatio));
             }
         }
 
@@ -181,11 +241,7 @@ namespace AntdUI
             {
                 if (mode == value) return;
                 mode = value;
-                if (IsHandleCreated)
-                {
-                    ChangeList();
-                    Invalidate();
-                }
+                ChangeList(true);
                 OnPropertyChanged(nameof(Mode));
             }
         }
@@ -208,11 +264,7 @@ namespace AntdUI
             {
                 if (indent == value) return;
                 indent = value;
-                if (IsHandleCreated)
-                {
-                    ChangeList();
-                    Invalidate();
-                }
+                ChangeList(true);
                 OnPropertyChanged(nameof(Indent));
             }
         }
@@ -275,11 +327,7 @@ namespace AntdUI
             {
                 if (collapsed == value) return;
                 collapsed = value;
-                if (IsHandleCreated)
-                {
-                    ChangeList();
-                    Invalidate();
-                }
+                ChangeList(true);
                 OnPropertyChanged(nameof(Collapsed));
             }
         }
@@ -386,11 +434,7 @@ namespace AntdUI
             {
                 if (pauseLayout == value) return;
                 pauseLayout = value;
-                if (!value)
-                {
-                    ChangeList();
-                    Invalidate();
-                }
+                if (!value) ChangeList(true);
                 OnPropertyChanged(nameof(PauseLayout));
             }
         }
@@ -466,7 +510,7 @@ namespace AntdUI
 
         protected override void OnSizeChanged(EventArgs e)
         {
-            if (IsHandleCreated) ChangeList();
+            ChangeList();
             base.OnSizeChanged(e);
         }
 
@@ -483,48 +527,86 @@ namespace AntdUI
 
         bool scroll_show = false, hover_r = false;
         Rectangle rect_r, rect_r_ico;
-        internal void ChangeList()
+        bool CanLayout()
         {
-            var _rect = ClientRectangle;
-            if (_rect.Width == 0 || _rect.Height == 0 || pauseLayout || items == null || items.Count == 0) return;
-            var rect = _rect.PaddingRect(Padding);
-            int x = 0, y = 0;
-            int icon_count = 0;
-            Helper.GDI(g =>
+            if (IsHandleCreated)
             {
-                var size = g.MeasureString(Config.NullText, Font);
-                int icon_size = (int)Math.Ceiling(size.Height * iconratio), gap = icon_size / 2, gapI = gap / 2, height = size.Height + gap * 2;
-                if (mode == TMenuMode.Horizontal)
+                var rect = ClientRectangle;
+                if (pauseLayout || items == null || items.Count == 0 || rect.Width == 0 || rect.Height == 0) return false;
+                return true;
+            }
+            return false;
+        }
+        internal void ChangeList(bool print = false)
+        {
+            if (CanLayout())
+            {
+                var _rect = ClientRectangle;
+                var rect = _rect.PaddingRect(Padding);
+                int x = 0, y = 0, icon_count = 0;
+                Helper.GDI(g =>
                 {
-                    int sp = _gap.HasValue ? (int)(_gap.Value * Config.Dpi) : 0;
-                    ChangeListHorizontal(rect, g, items, ref x, icon_size, gap, gapI, sp);
-                    scroll_show = x > rect.Width;
-                    if (scroll_show)
+                    var size = g.MeasureString(Config.NullText, Font);
+                    int icon_size = (int)(size.Height * iconratio);
+                    int gap = (_gap.HasValue ? (int)(_gap.Value * Config.Dpi) : (int)(size.Height * .8F)), gap2 = gap * 2, sp = (_itemMargin.HasValue ? (int)(_itemMargin.Value * Config.Dpi) : (int)(size.Height * .2F)), sp2 = sp * 2, height = size.Height + gap2;
+                    int inlineIndent = (_inlineIndent.HasValue ? (int)(_inlineIndent.Value * Config.Dpi) : (int)(size.Height * 1.2F)), iconsp = (icongap.HasValue ? (int)(icongap.Value * Config.Dpi) : size.Height / 2);
+                    if (mode == TMenuMode.Horizontal)
                     {
-                        rect_r = new Rectangle(rect.Right - rect.Height, rect.Y, rect.Height, rect.Height);
-                        int ico_size = (int)(rect_r.Height * .6F), ico_xy = (rect_r.Height - ico_size) / 2;
-                        rect_r_ico = new Rectangle(rect_r.X + ico_xy, rect_r.Y + ico_xy, ico_size, ico_size);
+                        ChangeListHorizontal(rect, g, items!, ref x, icon_size, gap, gap2, sp, sp2, iconsp);
+                        scroll_show = x > rect.Width;
+                        if (scroll_show)
+                        {
+                            rect_r = new Rectangle(rect.Right - rect.Height, rect.Y, rect.Height, rect.Height);
+                            int ico_size = (int)(rect_r.Height * .6F), ico_xy = (rect_r.Height - ico_size) / 2;
+                            rect_r_ico = new Rectangle(rect_r.X + ico_xy, rect_r.Y + ico_xy, ico_size, ico_size);
+                        }
                     }
-                }
-                else
-                {
-                    int sp = _gap.HasValue ? (int)(_gap.Value * Config.Dpi) : gapI;
-                    scroll_show = false;
-                    collapseWidth = icon_size * 2 + gap + gapI + Padding.Horizontal;
-                    collapsedWidth = ChangeList(rect, g, null, items, ref y, ref icon_count, height, icon_size, gap, sp, 0) + Padding.Horizontal;
-                    if (AutoCollapse)
+                    else
                     {
-                        if (icon_count > 0) collapsed = collapsedWidth >= _rect.Width;
-                        else collapsed = false;
+                        scroll_show = false;
+                        collapseWidth = icon_size + gap2 + Padding.Horizontal;
+                        if (mode == TMenuMode.InlineNoText)
+                        {
+                            int arrow_size = arrowRatio.HasValue ? (int)(size.Height * arrowRatio.Value) : (int)(icon_size * 0.85F);
+                            collapsedWidth = ChangeListInlineNoText(rect, g, null, items!, ref y, height, icon_size, arrow_size, gap, gap2, sp, sp2, iconsp) + Padding.Horizontal;
+                        }
+                        else
+                        {
+                            int arrow_size = arrowRatio.HasValue ? (int)(size.Height * arrowRatio.Value) : icon_size;
+                            int yr = ChangeListY(rect, items!, ref icon_count, height, sp) + Padding.Vertical;
+                            int scx = yr > _rect.Height ? ScrollBar.SIZE : 0;
+                            collapsedWidth = ChangeList(rect, g, null, items!, ref y, height, icon_size, arrow_size, gap, gap2, sp, sp2, inlineIndent, iconsp, scx, 0) + Padding.Horizontal;
+                        }
+                        if (AutoCollapse)
+                        {
+                            if (icon_count > 0) collapsed = collapsedWidth >= _rect.Width;
+                            else collapsed = false;
+                        }
+                        if (collapsed) ChangeUTitle(items!);
                     }
-                    if (collapsed) ChangeUTitle(items);
-                }
-            });
-            ScrollBar.SetVrSize(y + Padding.Vertical);
-            ScrollBar.SizeChange(_rect);
+                });
+                ScrollBar.SetVrSize(y + Padding.Vertical);
+                ScrollBar.SizeChange(_rect);
+            }
+            if (print) Invalidate();
         }
 
-        int ChangeList(Rectangle rect, Canvas g, MenuItem? Parent, MenuItemCollection items, ref int y, ref int icon_count, int height, int icon_size, int gap, int sp, int depth)
+        int ChangeListY(Rectangle rect, MenuItemCollection items, ref int icon_count, int height, int sp)
+        {
+            int y = 0;
+            foreach (var it in items)
+            {
+                if (it.HasIcon) icon_count++;
+                if (it.Visible)
+                {
+                    y += height + sp;
+                    if ((mode == TMenuMode.Inline || mode == TMenuMode.InlineNoText) && it.Expand) y += ChangeListY(rect, it.Sub, ref icon_count, height, sp);
+                }
+            }
+            return y;
+        }
+
+        int ChangeList(Rectangle rect, Canvas g, MenuItem? Parent, MenuItemCollection items, ref int y, int height, int icon_size, int arrow_size, int gap, int gap2, int sp, int sp2, int inlineIndent, int iconsp, int scx, int depth)
         {
             int collapsedWidth = 0, i = 0;
             foreach (var it in items)
@@ -533,20 +615,25 @@ namespace AntdUI
                 i++;
                 it.PARENT = this;
                 it.PARENTITEM = Parent;
-                if (it.HasIcon) icon_count++;
-                it.SetRect(mode == TMenuMode.InlineNoText ? 0 : depth, Indent, mode, new Rectangle(rect.X, rect.Y + y, rect.Width, height), icon_size, gap);
+                int uw = it.SetRect(depth, Indent, new Rectangle(rect.X, rect.Y + y, rect.Width, height), icon_size, arrow_size, gap, gap2, sp, sp2, inlineIndent, iconsp, scx);
                 if (it.Visible)
                 {
-                    int size = g.MeasureText(it.Text, it.Font ?? Font).Width + gap * 4 + icon_size + it.arr_rect.Width;
+                    int size = g.MeasureText(it.Text, it.Font ?? Font).Width + uw + gap2 + scx;
                     if (size > collapsedWidth) collapsedWidth = size;
                     y += height + sp;
-                    if ((mode == TMenuMode.Inline || mode == TMenuMode.InlineNoText) && it.CanExpand)
+                    if (mode == TMenuMode.Inline && it.CanExpand)
                     {
-                        if (!collapsed)
+                        if (collapsed)
+                        {
+                            int oldy = y;
+                            int size2 = ChangeList(rect, g, it, it.Sub, ref y, height, icon_size, arrow_size, gap, gap2, sp, sp2, inlineIndent, iconsp, scx, depth + 1);
+                            if (size2 > collapsedWidth) collapsedWidth = size2;
+                            y = oldy;
+                        }
+                        else
                         {
                             int y_item = y;
-
-                            int size2 = ChangeList(rect, g, it, it.Sub, ref y, ref icon_count, height, icon_size, gap, sp, depth + 1);
+                            int size2 = ChangeList(rect, g, it, it.Sub, ref y, height, icon_size, arrow_size, gap, gap2, sp, sp2, inlineIndent, iconsp, scx, depth + 1);
                             if (size2 > collapsedWidth) collapsedWidth = size2;
 
                             it.SubY = rect.Y + y_item - sp / 2;
@@ -559,19 +646,58 @@ namespace AntdUI
                             }
                             else if (!it.Expand) y = y_item;
                         }
-                        else
+                    }
+                }
+            }
+            return collapsedWidth;
+        }
+        int ChangeListInlineNoText(Rectangle rect, Canvas g, MenuItem? Parent, MenuItemCollection items, ref int y, int height, int icon_size, int arrow_size, int gap, int gap2, int sp, int sp2, int iconsp)
+        {
+            int collapsedWidth = 0, i = 0;
+            foreach (var it in items)
+            {
+                it.Index = i;
+                i++;
+                it.PARENT = this;
+                it.PARENTITEM = Parent;
+                int uw = it.SetRectInlineNoText(new Rectangle(rect.X, rect.Y + y, rect.Width, height), icon_size, arrow_size, gap, gap2, sp, sp2, iconsp);
+                if (it.Visible)
+                {
+                    int size = g.MeasureText(it.Text, it.Font ?? Font).Width + uw + gap2;
+                    if (size > collapsedWidth) collapsedWidth = size;
+                    y += height + sp;
+                    if (it.CanExpand)
+                    {
+                        if (collapsed)
                         {
                             int oldy = y;
-                            int size2 = ChangeList(rect, g, it, it.Sub, ref y, ref icon_count, height, icon_size, gap, sp, depth + 1);
+                            int size2 = ChangeListInlineNoText(rect, g, it, it.Sub, ref y, height, icon_size, arrow_size, gap, gap2, sp, sp2, iconsp);
                             if (size2 > collapsedWidth) collapsedWidth = size2;
                             y = oldy;
+                        }
+                        else
+                        {
+                            int y_item = y;
+
+                            int size2 = ChangeListInlineNoText(rect, g, it, it.Sub, ref y, height, icon_size, arrow_size, gap, gap2, sp, sp2, iconsp);
+                            if (size2 > collapsedWidth) collapsedWidth = size2;
+
+                            it.SubY = rect.Y + y_item - sp / 2;
+                            it.SubHeight = y - y_item;
+
+                            if ((it.Expand || it.ExpandThread) && it.ExpandProg > 0)
+                            {
+                                it.ExpandHeight = y - y_item;
+                                y = y_item + (int)Math.Ceiling(it.ExpandHeight * it.ExpandProg);
+                            }
+                            else if (!it.Expand) y = y_item;
                         }
                     }
                 }
             }
             return collapsedWidth;
         }
-        void ChangeListHorizontal(Rectangle rect, Canvas g, MenuItemCollection items, ref int x, int icon_size, int gap, int gapI, int sp)
+        void ChangeListHorizontal(Rectangle rect, Canvas g, MenuItemCollection items, ref int x, int icon_size, int gap, int gap2, int sp, int sp2, int iconsp)
         {
             int i = 0;
             foreach (var it in items)
@@ -579,11 +705,24 @@ namespace AntdUI
                 it.Index = i;
                 i++;
                 it.PARENT = this;
-                int size;
-                if (it.HasIcon) size = g.MeasureText(it.Text, it.Font ?? Font).Width + gap * 3 + icon_size;
-                else size = g.MeasureText(it.Text, it.Font ?? Font).Width + gap * 2;
-                it.SetRectNoArr(0, new Rectangle(rect.X + x, rect.Y, size, rect.Height), icon_size, gap);
-                if (it.Visible) x += size + sp;
+                int width = g.MeasureText(it.Text, it.Font ?? Font).Width;
+                if (it.HasIcon)
+                {
+                    int tmp = icon_size + iconsp;
+                    int usew = gap2 + tmp, y = (rect.Height - icon_size) / 2;
+                    int size = width + gap2 + tmp;
+                    var _rect = new Rectangle(rect.X + x, rect.Y, size, rect.Height);
+                    it.ico_rect = new Rectangle(_rect.X + gap, _rect.Y + y, icon_size, icon_size);
+                    it.SetRectNoArr(_rect, new Rectangle(_rect.X + gap + tmp, _rect.Y, _rect.Width - usew, _rect.Height));
+                    if (it.Visible) x += size + sp;
+                }
+                else
+                {
+                    int size = width + gap2;
+                    var _rect = new Rectangle(rect.X + x, rect.Y, size, rect.Height);
+                    it.SetRectNoArr(_rect, new Rectangle(_rect.X + gap, _rect.Y, _rect.Width - gap2, _rect.Height));
+                    if (it.Visible) x += size + sp;
+                }
             }
         }
 
@@ -802,7 +941,7 @@ namespace AntdUI
                     if (it.CanExpand)
                     {
                         if (mode == TMenuMode.Horizontal || mode == TMenuMode.Vertical) PaintBack(g, back_active, it.rect, radius);
-                        using (var pen = new Pen(fore_active, 2F))
+                        using (var pen = new Pen(fore_active, Config.Dpi * 2))
                         {
                             pen.StartCap = pen.EndCap = System.Drawing.Drawing2D.LineCap.Round;
                             g.DrawLines(pen, it.arr_rect.TriangleLines(it.ArrowProg, .4F));
@@ -812,7 +951,7 @@ namespace AntdUI
                 }
                 else if (it.CanExpand)
                 {
-                    using (var pen = new Pen(fore_enabled, 2F))
+                    using (var pen = new Pen(fore_enabled, Config.Dpi * 2))
                     {
                         pen.StartCap = pen.EndCap = System.Drawing.Drawing2D.LineCap.Round;
                         g.DrawLines(pen, it.arr_rect.TriangleLines(it.ArrowProg, .4F));
@@ -843,7 +982,7 @@ namespace AntdUI
             {
                 if (mode == TMenuMode.Inline || mode == TMenuMode.InlineNoText)
                 {
-                    using (var pen = new Pen(fore, 2F))
+                    using (var pen = new Pen(fore, Config.Dpi * 2))
                     {
                         pen.StartCap = pen.EndCap = System.Drawing.Drawing2D.LineCap.Round;
                         g.DrawLines(pen, it.arr_rect.TriangleLines(it.ArrowProg, .4F));
@@ -851,7 +990,7 @@ namespace AntdUI
                 }
                 else if (mode == TMenuMode.Vertical)
                 {
-                    using (var pen = new Pen(fore, 2F))
+                    using (var pen = new Pen(fore, Config.Dpi * 2))
                     {
                         pen.StartCap = pen.EndCap = System.Drawing.Drawing2D.LineCap.Round;
                         g.DrawLines(pen, TAlignMini.Right.TriangleLines(it.arr_rect, .4F));
@@ -906,6 +1045,8 @@ namespace AntdUI
         protected override void OnMouseDown(MouseEventArgs e)
         {
             base.OnMouseDown(e);
+            CloseTip();
+            CloseDropDown();
             if (e.Button == MouseButtons.Right && !MouseRightCtrl) return;
             if (ScrollBar.MouseDown(e.X, e.Y))
             {
@@ -972,13 +1113,8 @@ namespace AntdUI
                             {
                                 if ((mode == TMenuMode.Horizontal || mode == TMenuMode.Vertical) && Trigger == Trigger.Click && item.items != null && item.items.Count > 0)
                                 {
-                                    if (subForm == null)
-                                    {
-                                        select_x = 0;
-                                        subForm = new LayeredFormMenuDown(this, radius, item.Rect, item.items);
-                                        subForm.Show(this);
-                                    }
-                                    else { subForm.IClose(); subForm = null; }
+                                    if (subForm == null) OpenDropDown(item);
+                                    else CloseDropDown();
                                 }
                                 else item.Expand = !item.Expand;
                             }
@@ -1011,144 +1147,74 @@ namespace AntdUI
             return false;
         }
 
-        int hoveindexold = -1;
         protected override void OnMouseMove(MouseEventArgs e)
         {
             base.OnMouseMove(e);
-            if (ScrollBar.MouseMove(e.X, e.Y))
+            if (ScrollBar.MouseMove(e.X, e.Y) && OnTouchMove(e.X, e.Y))
             {
-                if (OnTouchMove(e.X, e.Y))
+                if (items == null || items.Count == 0) return;
+                int count = 0, hand = 0;
+                if (scroll_show)
                 {
-                    if (items == null || items.Count == 0) return;
-                    int count = 0, hand = 0;
-                    if (scroll_show)
+                    if (rect_r.Contains(e.X, e.Y))
                     {
-                        if (rect_r.Contains(e.X, e.Y))
+                        if (!hover_r)
                         {
-                            if (!hover_r)
-                            {
-                                hover_r = true;
-                                Invalidate();
-                                tooltipForm?.Close();
-                                tooltipForm = null;
-                                subForm?.Close();
-                                subForm = null;
-                                var list = new List<MenuItem>(items.Count);
-                                foreach (var it in items)
-                                {
-                                    if (it.Rect.X > (rect_r.X - it.Rect.Width)) list.Add(it);
-                                }
-                                subForm = new LayeredFormMenuDown(this, radius, rect_r, list);
-                                subForm.Show(this);
-                            }
-                            foreach (var it in items) it.Hover = false;
-                            SetCursor(true);
-                            return;
+                            hover_r = true;
+                            Invalidate();
                         }
-                        else
-                        {
-                            if (hover_r) count++;
-                            hover_r = false;
-                        }
-                    }
-                    if (collapsed)
-                    {
-                        int i = 0, hoveindex = -1;
-                        foreach (var it in items)
-                        {
-                            if (it.show)
-                            {
-                                if (it.Contains(e.X, e.Y, 0, ScrollBar.Value, out var change))
-                                {
-                                    hoveindex = i;
-                                    hand++;
-                                }
-                                if (change) count++;
-                            }
-                            i++;
-                        }
-                        if (hoveindex != hoveindexold)
-                        {
-                            hoveindexold = hoveindex;
-
-                            subForm?.Close();
-                            subForm = null;
-                            tooltipForm?.Close();
-                            tooltipForm = null;
-                            if (hoveindex > -1)
-                            {
-                                var it = items[hoveindex];
-                                if (it == null) return;
-                                if (it.items != null && it.items.Count > 0)
-                                {
-                                    select_x = 0;
-                                    subForm = new LayeredFormMenuDown(this, radius, it.Rect, it.items);
-                                    subForm.Show(this);
-                                }
-                                else if (it.Text != null) ShowTooltip(it, it.Rect);
-                            }
-                        }
-                    }
-                    else if (mode == TMenuMode.Inline || mode == TMenuMode.InlineNoText)
-                    {
-                        foreach (var it in items) IMouseMove(it, e.X, e.Y, ref count, ref hand);
+                        foreach (var it in items) it.Hover = false;
+                        SetCursor(true);
+                        return;
                     }
                     else
                     {
-                        int i = 0, hoveindex = -1;
-                        foreach (var it in items)
+                        if (hover_r) count++;
+                        hover_r = false;
+                    }
+                }
+                if (collapsed)
+                {
+                    foreach (var it in items)
+                    {
+                        if (it.show)
                         {
-                            if (it.show)
-                            {
-                                if (it.Contains(e.X, e.Y, 0, ScrollBar.Value, out var change))
-                                {
-                                    hoveindex = i;
-                                    hand++;
-                                }
-                                if (change) count++;
-                            }
-                            i++;
-                        }
-                        if (hoveindex != hoveindexold)
-                        {
-                            hoveindexold = hoveindex;
-
-                            subForm?.Close();
-                            subForm = null;
-                            tooltipForm?.Close();
-                            tooltipForm = null;
-                            if (hoveindex > -1)
-                            {
-                                var it = items[hoveindex];
-                                if (it == null) return;
-                                if (Trigger == Trigger.Hover && it.items != null && it.items.Count > 0)
-                                {
-                                    select_x = 0;
-                                    subForm = new LayeredFormMenuDown(this, radius, it.Rect, it.items);
-                                    subForm.Show(this);
-                                }
-                            }
+                            if (it.Contains(e.X, e.Y, 0, ScrollBar.Value, out var change)) hand++;
+                            if (change) count++;
                         }
                     }
-                    SetCursor(hand > 0);
-                    if (count > 0) Invalidate();
                 }
+                else if (mode == TMenuMode.Inline)
+                {
+                    foreach (var it in items) IMouseMove(it, e.X, e.Y, ref count, ref hand);
+                }
+                else if (mode == TMenuMode.InlineNoText)
+                {
+                    foreach (var it in items)
+                    {
+                        if (it.show)
+                        {
+                            if (it.Contains(e.X, e.Y, 0, ScrollBar.Value, out var change)) hand++;
+                            if (change) count++;
+                            if (it.items != null && it.items.Count > 0) foreach (var sub in it.items) IMouseMove(sub, e.X, e.Y, ref count, ref hand);
+                        }
+                    }
+                }
+                else
+                {
+                    foreach (var it in items)
+                    {
+                        if (it.show)
+                        {
+                            if (it.Contains(e.X, e.Y, 0, ScrollBar.Value, out var change)) hand++;
+                            if (change) count++;
+                        }
+                    }
+                }
+                SetCursor(hand > 0);
+                if (count > 0) Invalidate();
             }
             else ILeave();
-        }
-        void ShowTooltip(MenuItem it, Rectangle rect)
-        {
-            if (it.Text == null) return;
-            if (tooltipForm == null)
-            {
-                tooltipForm = new TooltipForm(this, rect, it.Text, TooltipConfig ?? new TooltipConfig
-                {
-                    Font = it.Font ?? Font,
-                    ArrowAlign = TAlign.Right,
-                });
-                tooltipForm.Show(this);
-            }
-            else tooltipForm.SetText(rect, it.Text);
         }
 
         void IMouseMove(MenuItem it, int x, int y, ref int count, ref int hand)
@@ -1157,25 +1223,117 @@ namespace AntdUI
             {
                 if (it.Contains(x, y, 0, ScrollBar.Value, out var change))
                 {
-                    if (mode == TMenuMode.InlineNoText)
-                    {
-                        var rect = new Rectangle(it.rect.X, it.rect.Y + (it.rect.Height / 2) - ScrollBar.Value, it.rect.Width, rect_r.Height);
-                        ShowTooltip(it, rect);
-                    }
                     hand++;
+                    return;
                 }
                 if (change) count++;
                 if (it.items != null && it.items.Count > 0) foreach (var sub in it.items) IMouseMove(sub, x, y, ref count, ref hand);
             }
         }
 
+        #region 鼠标悬浮
+
+        protected override bool CanMouseMove { get; set; } = true;
+        protected override void OnMouseHover(int x, int y)
+        {
+            CloseTip();
+            if (x == -1 || y == -1) return;
+            CloseDropDown();
+            if (items == null || items.Count == 0) return;
+            if (scroll_show)
+            {
+                if (rect_r.Contains(x, y))
+                {
+                    var list = new List<MenuItem>(items.Count);
+                    foreach (var it in items)
+                    {
+                        if (it.Rect.X > (rect_r.X - it.Rect.Width)) list.Add(it);
+                    }
+                    subForm = new LayeredFormMenuDown(this, radius, rect_r, list);
+                    subForm.Show(this);
+                    return;
+                }
+            }
+            int sy = ScrollBar.Value;
+            if (collapsed)
+            {
+                foreach (var it in items)
+                {
+                    if (it.show && it.rect.Contains(x, y + sy))
+                    {
+                        if (OpenDropDown(it)) OpenTip(it, it.Rect);
+                        return;
+                    }
+                }
+            }
+            else if (mode == TMenuMode.Inline) return;
+            else if (mode == TMenuMode.InlineNoText)
+            {
+                foreach (var it in items) IMouseHover(it, x, y, sy);
+            }
+            else
+            {
+                foreach (var it in items)
+                {
+                    if (it.show && it.rect.Contains(x, y + sy))
+                    {
+                        if (Trigger == Trigger.Hover) OpenDropDown(it);
+                        return;
+                    }
+                }
+            }
+        }
+
+        void IMouseHover(MenuItem it, int x, int y, int sy)
+        {
+            if (it.show && it.rect.Contains(x, y + sy))
+            {
+                var rect = new Rectangle(it.rect.X, it.rect.Y + (it.rect.Height / 2) - ScrollBar.Value, it.rect.Width, rect_r.Height);
+                OpenTip(it, rect);
+                return;
+            }
+            if (it.items != null && it.items.Count > 0) foreach (var sub in it.items) IMouseHover(sub, x, y, sy);
+        }
+
+        #region Tip
+
+        TooltipForm? toolTip;
+
+        public void CloseTip()
+        {
+            toolTip?.IClose();
+            toolTip = null;
+        }
+
+        bool OpenTip(MenuItem it, Rectangle rect)
+        {
+            if (it.Text == null) return true;
+            if (toolTip == null)
+            {
+                toolTip = new TooltipForm(this, rect, it.Text, TooltipConfig ?? new TooltipConfig
+                {
+                    Font = it.Font ?? Font,
+                    ArrowAlign = TAlign.Right,
+                });
+                toolTip.Show(this);
+            }
+            else if (toolTip.SetText(rect, it.Text))
+            {
+                CloseTip();
+                OpenTip(it, rect);
+            }
+            return false;
+        }
+
+        #endregion
+
+        #endregion
+
         protected override void OnMouseLeave(EventArgs e)
         {
             base.OnMouseLeave(e);
             if (RectangleToScreen(ClientRectangle).Contains(MousePosition)) return;
-            hoveindexold = -1;
-            tooltipForm?.Close();
-            tooltipForm = null;
+            CloseTip();
             ScrollBar.Leave();
             ILeave();
         }
@@ -1294,11 +1452,7 @@ namespace AntdUI
                     it.Select = true;
                     tmpAM = true;
                     SelectChanged?.Invoke(this, new MenuSelectEventArgs(it));
-                    if (SelectEx(it.PARENTITEM) > 0)
-                    {
-                        ChangeList();
-                        Invalidate();
-                    }
+                    if (SelectEx(it.PARENTITEM) > 0) ChangeList(true);
                     tmpAM = false;
                     if (focus && ScrollBar.ShowY) ScrollBar.ValueY = it.rect.Y;
                     return;
@@ -1372,7 +1526,6 @@ namespace AntdUI
 
         #region 子窗口
 
-        TooltipForm? tooltipForm;
         ILayeredForm? subForm;
         public ILayeredForm? SubForm() => subForm;
         internal int select_x = 0;
@@ -1425,6 +1578,19 @@ namespace AntdUI
             return false;
         }
 
+        bool OpenDropDown(MenuItem it)
+        {
+            if (it.items == null || it.items.Count == 0) return true;
+            select_x = 0;
+            subForm = new LayeredFormMenuDown(this, radius, it.Rect, it.items);
+            subForm.Show(this);
+            return false;
+        }
+        void CloseDropDown()
+        {
+            subForm?.Close();
+            subForm = null;
+        }
 
         #endregion
 
@@ -1450,8 +1616,8 @@ namespace AntdUI
         {
             action = render =>
             {
-                if (render) it.ChangeList();
-                it.Invalidate();
+                if (render) it.ChangeList(true);
+                else it.Invalidate();
             };
             return this;
         }
@@ -1460,8 +1626,8 @@ namespace AntdUI
             action = render =>
             {
                 if (it.PARENT == null) return;
-                if (render) it.PARENT.ChangeList();
-                it.PARENT.Invalidate();
+                if (render) it.PARENT.ChangeList(true);
+                else it.PARENT.Invalidate();
             };
             return this;
         }
@@ -1966,42 +2132,63 @@ namespace AntdUI
 
         #region 布局
 
-        internal void SetRect(int depth, bool indent, TMenuMode mode, Rectangle _rect, int icon_size, int gap)
+        internal int SetRect(int depth, bool indent, Rectangle _rect, int icon_size, int arrow_size, int gap, int gap2, int sp, int sp2, int inlineIndent, int iconsp, int scx)
         {
             Depth = depth;
             rect = _rect;
+            int x = gap, usew = gap2, y = (_rect.Height - icon_size) / 2;
+            if (indent && depth > 0)
+            {
+                int tmp = inlineIndent * depth;
+                x += tmp;
+                usew += tmp;
+            }
+            else if (depth > 1)
+            {
+                int tmp = inlineIndent * (depth - 1);
+                x += tmp;
+                usew += tmp;
+            }
             if (HasIcon)
             {
-                if (indent || depth > 1)
-                {
-                    ico_rect = new Rectangle(_rect.X + (gap * (depth + 1)), _rect.Y + (_rect.Height - icon_size) / 2, icon_size, icon_size);
-                    txt_rect = new Rectangle(ico_rect.X + ico_rect.Width + gap, _rect.Y, _rect.Width - (ico_rect.Width + gap * 2), _rect.Height);
-                }
-                else
-                {
-                    ico_rect = new Rectangle(_rect.X + gap, _rect.Y + (_rect.Height - icon_size) / 2, icon_size, icon_size);
-                    txt_rect = new Rectangle(ico_rect.X + ico_rect.Width + gap, _rect.Y, _rect.Width - (ico_rect.Width + gap * 2), _rect.Height);
-                }
-                arr_rect = new Rectangle(_rect.Right - ico_rect.Height - (mode == TMenuMode.InlineNoText ? -(int)(4 * Config.Dpi) : (int)(ico_rect.Height * 0.9F)), _rect.Y + (_rect.Height - ico_rect.Height) / 2, ico_rect.Height, ico_rect.Height);
+                int tmp = icon_size + iconsp;
+                ico_rect = new Rectangle(_rect.X + x, _rect.Y + y, icon_size, icon_size);
+
+                x += tmp;
+                usew += tmp;
+
+                txt_rect = new Rectangle(_rect.X + x, _rect.Y, _rect.Width - usew, _rect.Height);
             }
-            else
-            {
-                if (indent || depth > 1) txt_rect = new Rectangle(_rect.X + (gap * (depth + 1)), _rect.Y, _rect.Width - (gap * 2), _rect.Height);
-                else txt_rect = new Rectangle(_rect.X + gap, _rect.Y, _rect.Width - (gap * 2), _rect.Height);
-                arr_rect = new Rectangle(_rect.Right - icon_size - (mode == TMenuMode.InlineNoText ? -(int)(4 * Config.Dpi) : (int)(ico_rect.Height * 0.9F)), _rect.Y + (_rect.Height - icon_size) / 2, icon_size, icon_size);
-            }
+            else txt_rect = new Rectangle(_rect.X + x, _rect.Y, _rect.Width - usew, _rect.Height);
+            arr_rect = new Rectangle(_rect.Right - icon_size - gap - scx, _rect.Y + y, icon_size, icon_size);
             Show = true;
+            return usew;
         }
-        internal void SetRectNoArr(int depth, Rectangle _rect, int icon_size, int gap)
+        internal int SetRectInlineNoText(Rectangle _rect, int icon_size, int arrow_size, int gap, int gap2, int sp, int sp2, int iconsp)
         {
-            Depth = depth;
+            Depth = 0;
             rect = _rect;
+            int x = gap, usew = gap2;
             if (HasIcon)
             {
-                ico_rect = new Rectangle(_rect.X + gap, _rect.Y + (_rect.Height - icon_size) / 2, icon_size, icon_size);
-                txt_rect = new Rectangle(ico_rect.X + ico_rect.Width + gap, _rect.Y, _rect.Width - (ico_rect.Width + gap * 2), _rect.Height);
+                int tmp = icon_size + iconsp, y = (_rect.Height - icon_size) / 2;
+                ico_rect = new Rectangle(_rect.X + x, _rect.Y + y, icon_size, icon_size);
+
+                x += tmp;
+                usew += tmp;
+
+                txt_rect = new Rectangle(_rect.X + x, _rect.Y, _rect.Width - usew, _rect.Height);
             }
-            else txt_rect = new Rectangle(_rect.X + gap, _rect.Y, _rect.Width - (gap * 2), _rect.Height);
+            else txt_rect = new Rectangle(_rect.X + x, _rect.Y, _rect.Width - usew, _rect.Height);
+            arr_rect = new Rectangle(_rect.Right - (arrow_size - sp), _rect.Y + (_rect.Height - arrow_size) / 2, arrow_size, arrow_size);
+            Show = true;
+            return usew;
+        }
+        internal void SetRectNoArr(Rectangle _rect, Rectangle rect_text)
+        {
+            Depth = 0;
+            rect = _rect;
+            txt_rect = rect_text;
             Show = true;
         }
         internal Rectangle rect { get; set; }
@@ -2055,12 +2242,7 @@ namespace AntdUI
         internal bool show { get; set; }
         internal bool Show { get; set; }
         void Invalidate() => PARENT?.Invalidate();
-        void Invalidates()
-        {
-            if (PARENT == null) return;
-            PARENT.ChangeList();
-            PARENT.Invalidate();
-        }
+        void Invalidates() => PARENT?.ChangeList(true);
 
         #endregion
 

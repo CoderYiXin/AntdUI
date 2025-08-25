@@ -45,10 +45,7 @@ namespace AntdUI
         [Browsable(false)]
         [EditorBrowsable(EditorBrowsableState.Never)]
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public new FormBorderStyle FormBorderStyle
-        {
-            get => base.FormBorderStyle;
-        }
+        public new FormBorderStyle FormBorderStyle => base.FormBorderStyle;
 
         bool CanMessageFilter => DwmEnabled || shadow < 4;
 
@@ -262,7 +259,7 @@ namespace AntdUI
         int oldmargin = 0;
         void DwmArea()
         {
-            if (DwmEnabled && shadow > 0)
+            if (DwmEnabled)
             {
                 int margin;
                 if (WindowState == FormWindowState.Normal) margin = 1;
@@ -270,7 +267,7 @@ namespace AntdUI
                 if (oldmargin == margin) return;
                 oldmargin = margin;
                 var v = 2;
-                DarkUI.DwmSetWindowAttribute(Handle, 2, ref v, 4);
+                Win32.DwmSetWindowAttribute(Handle, 2, ref v, 4);
                 DwmExtendFrameIntoClientArea(Handle, new MARGINS(margin));
             }
         }
@@ -373,10 +370,11 @@ namespace AntdUI
         protected override void OnHandleCreated(EventArgs e)
         {
             base.OnHandleCreated(e);
-            if (UseDwm && OS.Version.Major >= 6) DwmEnabled = DarkUI.IsCompositionEnabled;
+            if (UseDwm && OS.Version.Major >= 6) DwmEnabled = Win32.IsCompositionEnabled;
             SetTheme();
             DisableProcessWindowsGhosting();
             HandMessage();
+            DwmArea();
         }
 
         #region 交互

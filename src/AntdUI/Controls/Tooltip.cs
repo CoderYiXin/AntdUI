@@ -230,12 +230,11 @@ namespace AntdUI
         bool multiline = false;
         int? maxWidth;
         int arrowSize = 0, arrowX = -1;
-        public override bool MessageEnable => true;
         public TooltipForm(Control control, string txt, ITooltipConfig component) : base(240)
         {
             ocontrol = control;
             control.Parent.SetTopMost(Handle);
-            MessageCloseMouseLeave = true;
+            MessageEnable = MessageCloseMouseLeave = true;
             Text = txt;
             Font = component.Font ?? Config.Font ?? control.Font;
             ArrowSize = component.ArrowSize;
@@ -262,13 +261,12 @@ namespace AntdUI
                 ArrowAlign = align;
                 SetLocation(x, y);
             }
-            control.Disposed += Control_Close;
         }
         public TooltipForm(Control control, Rectangle rect, string txt, ITooltipConfig component, bool hasmax = false) : base(240)
         {
             ocontrol = control;
             control.SetTopMost(Handle);
-            MessageCloseMouseLeave = true;
+            MessageEnable = MessageCloseMouseLeave = true;
             Text = txt;
             Font = component.Font ?? Config.Font ?? control.Font;
             ArrowSize = component.ArrowSize;
@@ -286,13 +284,18 @@ namespace AntdUI
             new CalculateCoordinate(control, TargetRect, arrowSize, gap, gap * 2, rect).SetScreen(screen).Auto(ref align, gap + (int)(Radius * Config.Dpi), out int x, out int y, out arrowX);
             ArrowAlign = align;
             SetLocation(x, y);
-            control.Disposed += Control_Close;
+        }
+        public TooltipForm NoMessage()
+        {
+            MessageEnable = MessageCloseMouseLeave = false;
+            return this;
         }
 
         public override string name => nameof(Tooltip);
 
         public bool SetText(Rectangle rect, string text)
         {
+            if (Text == text) return false;
             Text = text;
             int gap = 0;
             Helper.GDI(g => SetSize(this.RenderMeasure(g, maxWidth, out multiline, out gap, out arrowSize)));
@@ -303,8 +306,6 @@ namespace AntdUI
             if (Print() == RenderResult.OK) return false;
             else return true;
         }
-
-        private void Control_Close(object? sender, EventArgs e) => IClose();
 
         #region 参数
 
@@ -361,19 +362,6 @@ namespace AntdUI
         }
 
         #endregion
-
-        protected override void Dispose(bool disposing)
-        {
-            if (IsHandleCreated)
-            {
-                try
-                {
-                    if (ocontrol != null) ocontrol.Disposed -= Control_Close;
-                }
-                catch { }
-            }
-            base.Dispose(disposing);
-        }
     }
 
     [ProvideProperty("Tip", typeof(Control)), Description("提示")]

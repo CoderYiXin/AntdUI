@@ -80,6 +80,7 @@ namespace AntdUI
                 CellRanges = null;
                 dataSource = value;
                 SortData = null;
+                focusedCell = null;
                 ScrollBar.Clear();
                 ExtractHeaderFixed();
                 ExtractData();
@@ -240,8 +241,14 @@ namespace AntdUI
         /// <summary>
         /// 行复制
         /// </summary>
-        [Description("行复制"), Category("行为"), DefaultValue(true)]
+        [Description("行/列复制"), Category("行为"), DefaultValue(true)]
         public bool ClipboardCopy { get; set; } = true;
+
+        /// <summary>
+        /// 是否启用单元格复制
+        /// </summary>
+        [Description("是否启用单元格复制"), Category("行为"), DefaultValue(false)]
+        public bool ClipboardCopyFocusedCell { get; set; }
 
         /// <summary>
         /// 列宽自动调整模式
@@ -289,8 +296,8 @@ namespace AntdUI
         /// <summary>
         /// 单元格内间距
         /// </summary>
-        [Description("单元格内间距"), Category("外观"), DefaultValue(null)]
-        public int? GapCell { get; set; }
+        [Description("单元格内间距"), Category("外观"), DefaultValue(6)]
+        public int? GapCell { get; set; } = 6;
 
         [Description("单元格调整高度"), Category("边框"), DefaultValue(null)]
         public bool? CellImpactHeight { get; set; }
@@ -433,17 +440,20 @@ namespace AntdUI
         /// <summary>
         /// 当前获得焦点的列
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public Column? FocusedColumn => focusedCell?.COLUMN;
 
         /// <summary>
         /// 当前获得焦点的行
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public object? FocusedRow => focusedCell?.ROW.RECORD;
 
         CELL? focusedCell;
         /// <summary>
         /// 当前获得焦点的单元格
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public CELL? FocusedCell
         {
             get => focusedCell;
@@ -772,7 +782,7 @@ namespace AntdUI
         {
             get
             {
-                if (dataTmp == null) return 0;
+                if (dataTmp == null || dataTmp.rows.Length == 0) return 0;
                 int count = dataTmp.rows.Length;
                 var keyTree = KeyTreeCurrent;
                 if (keyTree == null) return count;
@@ -1098,6 +1108,27 @@ namespace AntdUI
         }
 
         /// <summary>
+        /// 复制表格数据
+        /// </summary>
+        /// <param name="row">行</param>
+        /// <param name="column">列</param>
+        public bool CopyData(CELL cell)
+        {
+            if (cell != null)
+            {
+                try
+                {
+                    var vals = cell.VALUE?.ToString();
+                    if (vals == null) return false;
+                    this.ClipboardSetText(vals);
+                    return true;
+                }
+                catch { }
+            }
+            return false;
+        }
+
+        /// <summary>
         /// 获取排序序号
         /// </summary>
         public int[] SortIndex()
@@ -1153,7 +1184,7 @@ namespace AntdUI
                 if (LoadLayout()) Invalidate();
                 return;
             }
-            if (dataTmp == null) return;
+            if (dataTmp == null || dataTmp.rows.Length == 0) return;
             var list = new List<int>(dataTmp.rows.Length);
             foreach (var it in data)
             {
@@ -1251,7 +1282,7 @@ namespace AntdUI
         /// <param name="toString">使用toString</param>
         public DataTable? ToDataTable(bool enableRender = true, bool toString = true)
         {
-            if (dataTmp == null) return null;
+            if (dataTmp == null || dataTmp.rows.Length == 0) return null;
             var dt = new DataTable();
 
             Dictionary<string, Column> dir_columns;

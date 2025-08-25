@@ -396,15 +396,23 @@ namespace AntdUI
             set
             {
                 if (textAlign == value) return;
-                if ((loading && LoadingValue > -1) || HasIcon || showArrow)
-                {
-                    value = ContentAlignment.MiddleCenter;
-                    if (textAlign == value) return;
-                }
                 textAlign = value;
                 textAlign.SetAlignment(ref stringFormat);
                 Invalidate();
                 OnPropertyChanged(nameof(TextAlign));
+            }
+        }
+
+        int? virtualWidth;
+        [Description("虚拟宽度"), Category("外观"), DefaultValue(null)]
+        public int? VirtualWidth
+        {
+            get => virtualWidth;
+            set
+            {
+                if (virtualWidth == value) return;
+                virtualWidth = value;
+                Invalidate();
             }
         }
 
@@ -556,7 +564,7 @@ namespace AntdUI
         /// 图标大小
         /// </summary>
         [Description("图标大小"), Category("外观"), DefaultValue(typeof(Size), "0, 0")]
-        public Size IconSize { get; set; } = new Size(0, 0);
+        public Size IconSize { get; set; }
 
         /// <summary>
         /// 悬停图标
@@ -1522,6 +1530,7 @@ namespace AntdUI
             }
             bool has_loading = loading && LoadingValue > -1;
             var font_size = g.MeasureText(text ?? Config.NullText, Font);
+            if (virtualWidth.HasValue) font_size.Width = virtualWidth.Value;
             if (text == null || displayStyle == TButtonDisplayStyle.Image)
             {
                 //没有文字
