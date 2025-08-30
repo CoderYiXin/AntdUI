@@ -30,6 +30,7 @@ namespace AntdUI
     /// <summary>
     /// DatePicker 日期选择框
     /// </summary>
+    /// <seealso cref="Input"/>
     /// <remarks>输入或选择日期的控件。</remarks>
     [Description("DatePicker 日期选择框")]
     [ToolboxItem(true)]
@@ -40,7 +41,6 @@ namespace AntdUI
         #region 属性
 
         string dateFormat = "yyyy-MM-dd";
-        internal bool ShowTime = false;
 
         /// <summary>
         /// 格式化
@@ -53,7 +53,6 @@ namespace AntdUI
             {
                 if (dateFormat == value) return;
                 dateFormat = value;
-                ShowTime = dateFormat.Contains("H");
                 Text = _value.HasValue ? _value.Value.ToString(dateFormat) : "";
                 OnPropertyChanged(nameof(Format));
             }
@@ -216,7 +215,7 @@ namespace AntdUI
                 {
                     if (subForm == null)
                     {
-                        subForm = new LayeredFormCalendar(this, ReadRectangle, _value, date => Value = date, btn => PresetsClickChanged?.Invoke(this, new ObjectNEventArgs(btn)), BadgeAction);
+                        subForm = new LayeredFormDatePicker(this, date => Value = date, btn => PresetsClickChanged?.Invoke(this, new ObjectNEventArgs(btn)), BadgeAction);
                         subForm.Disposed += (a, b) =>
                         {
                             subForm = null;
@@ -260,7 +259,7 @@ namespace AntdUI
 
         #region 动画
 
-        LayeredFormCalendar? subForm;
+        LayeredFormDatePicker? subForm;
         public ILayeredForm? SubForm() => subForm;
 
         #endregion

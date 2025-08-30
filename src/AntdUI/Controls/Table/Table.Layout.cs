@@ -73,6 +73,7 @@ namespace AntdUI
 
         bool has_check = false;
         Rectangle rect_read, rect_divider;
+        public Rectangle RectRead => rect_read;
         Rectangle LayoutDesign(Rectangle rect)
         {
             rowSummary = 0;
@@ -825,14 +826,26 @@ namespace AntdUI
         float check_radius = 0F, check_border = 1F;
         void AddRows(ref List<CELL> cells, ref int processing, Column column, IRow row, string key, bool summary = false)
         {
-            if (column is ColumnSort columnSort) cells.Add(new TCellSort(this, columnSort));
-            else if (row.cells.TryGetValue(key, out var ov))
+            if (summary)
             {
-                var value = OGetValue(ov, row.record, out var property, out var rv);
-                if (column.Render == null) AddRows(ref cells, ref processing, column, rv, value, property, summary);
-                else AddRows(ref cells, ref processing, column, rv, column.Render?.Invoke(value, row.record, row.i), property, summary);
+                if (row.cells.TryGetValue(key, out var ov))
+                {
+                    var value = OGetValue(ov, row.record, out var property, out var rv);
+                    AddRows(ref cells, ref processing, column, rv, value, property, summary);
+                }
+                else AddRows(ref cells, ref processing, column, null, null, null, summary);
             }
-            else AddRows(ref cells, ref processing, column, null, column.Render?.Invoke(null, row.record, row.i), null, summary);
+            else
+            {
+                if (column is ColumnSort columnSort) cells.Add(new TCellSort(this, columnSort));
+                else if (row.cells.TryGetValue(key, out var ov))
+                {
+                    var value = OGetValue(ov, row.record, out var property, out var rv);
+                    if (column.Render == null) AddRows(ref cells, ref processing, column, rv, value, property, summary);
+                    else AddRows(ref cells, ref processing, column, rv, column.Render?.Invoke(value, row.record, row.i), property, summary);
+                }
+                else AddRows(ref cells, ref processing, column, null, column.Render?.Invoke(null, row.record, row.i), null, summary);
+            }
         }
 
         /// <summary>
@@ -1184,7 +1197,8 @@ namespace AntdUI
                 else if (cel.ROW.RECORD is System.Data.DataRow datarow)
                 {
                     int col = cel.COLUMN.INDEX_REAL, row = cel.ROW.INDEX_REAL;
-                    datarow[col] = cel.VALUE = value;
+                    if (datarow.Table.Columns.Contains(cel.COLUMN.Key)) datarow[cel.COLUMN.Key] = cel.VALUE = value;
+                    else datarow[col] = cel.VALUE = value;
                     if (dataTmp == null) return;
                     dataTmp.rows[row].SetValue(col, value);
                 }

@@ -78,7 +78,7 @@
 ➡️| [**TimePicker** 时间选择框](doc/wiki/zh/Control/TimePicker.md) | ✅ | ✅ |
 ➡️| [**UploadDragger** 拖拽上传](doc/wiki/zh/Control/UploadDragger.md) | ✅ | ❎ |
 ||||
-⬇️| 数据展示 `18` | 动画 | 禁用 |
+⬇️| 数据展示 `19` | 动画 | 禁用 |
 ➡️| [**Avatar** 头像](doc/wiki/zh/Control/Avatar.md) | ❎ | ❎ |
 ➡️| [**Badge** 徽标数](doc/wiki/zh/Control/Badge.md) | ✅ | ❎ |
 ➡️| [**Calendar** 日历](doc/wiki/zh/Control/Calendar.md) | ✅ | ❎ |
@@ -97,8 +97,9 @@
 ➡️| [**Tour** 漫游式引导](doc/wiki/zh/Control/Tour.md) | ✅ | ❎ |
 ➡️| [**Label** 文本](doc/wiki/zh/Control/Label.md) | ✅ | ❎ |
 ➡️| [**LabelTime** 时间文本](doc/wiki/zh/Control/LabelTime.md) | ✅ | ❎ |
+➡️| **Chart** 图表 | ✅ | ❎ |
 ||||
-⬇️| 反馈 `7` | 动画 | 禁用 |
+⬇️| 反馈 `8` | 动画 | 禁用 |
 ➡️| [**Alert** 警告提示](doc/wiki/zh/Control/Alert.md) | ✅ | ❎ |
 ➡️| [**Drawer** 抽屉](doc/wiki/zh/Control/Drawer.md) | ✅ | ❎ |
 ➡️| [**Message** 全局提示](doc/wiki/zh/Control/Message.md) | ✅ | ❎ |
@@ -106,6 +107,7 @@
 ➡️| [**Notification** 通知提醒框](doc/wiki/zh/Control/Notification.md) | ✅ | ❎ |
 ➡️| [**Progress** 进度条](doc/wiki/zh/Control/Progress.md) | ✅ | ❎ |
 ➡️| [**Spin** 加载中](doc/wiki/zh/Control/Spin.md) | ✅ | ❎ |
+➡️| **Watermark** 水印 | ✅ | ❎ |
 ||||
 ⬇️| 聊天 `2` | 动画 | 禁用 |
 ➡️| **MsgList** 好友消息列表 | ✅ | ❎ |
@@ -128,5 +130,13 @@
 > 纯GDI，不是TextBox等拖控件
 
 ![ChatUI](doc/screenshot/ChatUI.gif)
+
+
+## 📢 特别声明
+
+AntdUI 项目已加入 [dotNET China](https://gitee.com/dotnetchina)  组织。<br/>
+
+![dotnetchina](https://gitee.com/dotnetchina/home/raw/master/assets/dotnetchina-raw.png "dotNET China LOGO")
+
 
 🦦 招募小伙伴一起维护项目

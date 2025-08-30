@@ -30,7 +30,8 @@ namespace AntdUI
                 case Keys.Control | Keys.C:
                     if (ClipboardCopy && rows != null && !inEditMode && selectedIndex.Length > 0)
                     {
-                        CopyData(selectedIndex);
+                        if (ClipboardCopyFocusedCell && FocusedCell != null) CopyData(FocusedCell);
+                        else CopyData(selectedIndex);
                         if (HandShortcutKeys) return true;
                     }
                     break;
@@ -149,8 +150,12 @@ namespace AntdUI
             {
                 while (true)
                 {
-                    if (rows[value].SHOW) return value;
-                    else value++;
+                    if (value < rows.Length - 1)
+                    {
+                        if (rows[value].SHOW) return value;
+                        else value++;
+                    }
+                    else return rows.Length - 1;
                 }
             }
             return value;
@@ -161,8 +166,13 @@ namespace AntdUI
             {
                 while (true)
                 {
-                    if (rows[value].SHOW) return value;
-                    else value--;
+                    if (value > 0)
+                    {
+                        if (rows.Length < value) return rows.Length - 1;
+                        else if (rows[value].SHOW) return value;
+                        else value--;
+                    }
+                    else return 0;
                 }
             }
             return value;
