@@ -358,7 +358,6 @@ namespace AntdUI
 
         #region 文本
 
-        bool textLine = false;
         string? text;
         /// <summary>
         /// 文本
@@ -373,8 +372,6 @@ namespace AntdUI
                 if (string.IsNullOrEmpty(value)) value = null;
                 if (text == value) return;
                 text = value;
-                if (text == null) textLine = false;
-                else textLine = text.Contains(Environment.NewLine);
                 if (BeforeAutoSize()) Invalidate();
                 OnTextChanged(EventArgs.Empty);
                 OnPropertyChanged(nameof(Text));
@@ -396,15 +393,23 @@ namespace AntdUI
             set
             {
                 if (textAlign == value) return;
-                if ((loading && LoadingValue > -1) || HasIcon || showArrow)
-                {
-                    value = ContentAlignment.MiddleCenter;
-                    if (textAlign == value) return;
-                }
                 textAlign = value;
                 textAlign.SetAlignment(ref stringFormat);
                 Invalidate();
                 OnPropertyChanged(nameof(TextAlign));
+            }
+        }
+
+        int? virtualWidth;
+        [Description("虚拟宽度"), Category("外观"), DefaultValue(null)]
+        public int? VirtualWidth
+        {
+            get => virtualWidth;
+            set
+            {
+                if (virtualWidth == value) return;
+                virtualWidth = value;
+                Invalidate();
             }
         }
 
@@ -556,7 +561,7 @@ namespace AntdUI
         /// 图标大小
         /// </summary>
         [Description("图标大小"), Category("外观"), DefaultValue(typeof(Size), "0, 0")]
-        public Size IconSize { get; set; } = new Size(0, 0);
+        public Size IconSize { get; set; }
 
         /// <summary>
         /// 悬停图标
@@ -1509,6 +1514,30 @@ namespace AntdUI
                 }
             }
         }
+        Size MeasureText(Canvas g, string? text, Rectangle rect, out int txt_height, out bool multiLine)
+        {
+            var font_height = g.MeasureText(Config.NullText, Font);
+            txt_height = font_height.Height;
+            multiLine = false;
+            if (text == null) return font_height;
+            else
+            {
+                var font_size = g.MeasureText(text, Font);
+                if (font_size.Width > rect.Width && (textMultiLine || text.Contains("\n")))
+                {
+                    multiLine = true;
+                    return g.MeasureText(text, Font, rect.Width);
+                }
+                else return font_size;
+            }
+        }
+        Size MeasureText(Canvas g, string? text, out int txt_height)
+        {
+            var font_height = g.MeasureText(Config.NullText, Font);
+            txt_height = font_height.Height;
+            if (text == null) return font_height;
+            else return g.MeasureText(text, Font);
+        }
         void PaintTextLoading(Canvas g, string? text, Color color, Rectangle rect_read, bool enabled, float radius)
         {
             if (enabled && hasFocus && WaveSize > 0)
@@ -1521,7 +1550,8 @@ namespace AntdUI
                 }
             }
             bool has_loading = loading && LoadingValue > -1;
-            var font_size = g.MeasureText(text ?? Config.NullText, Font);
+            var font_size = MeasureText(g, text, rect_read, out int txt_height, out bool textLine);
+            if (virtualWidth.HasValue) font_size.Width = virtualWidth.Value;
             if (text == null || displayStyle == TButtonDisplayStyle.Image)
             {
                 //没有文字
@@ -1539,7 +1569,7 @@ namespace AntdUI
                 {
                     if (PaintIcon(g, color, rect, false, enabled) && showArrow)
                     {
-                        int size = (int)(font_size.Height * IconRatio);
+                        int size = (int)(txt_height * IconRatio);
                         var rect_arrow = new Rectangle(rect_read.X + (rect_read.Width - size) / 2, rect_read.Y + (rect_read.Height - size) / 2, size, size);
                         PaintTextArrow(g, rect_arrow, color);
                     }
@@ -1556,7 +1586,7 @@ namespace AntdUI
                     {
                         if (has_left && has_right)
                         {
-                            rect_text = RectAlignLR(g, textLine, textMultiLine, Font, iconPosition, iconratio, icongap, font_size, rect_read, out var rect_l, out var rect_r);
+                            rect_text = RectAlignLR(g, txt_height, textLine, Font, iconPosition, iconratio, icongap, font_size, rect_read, out var rect_l, out var rect_r);
 
                             if (has_loading)
                             {
@@ -1573,7 +1603,7 @@ namespace AntdUI
                         }
                         else if (has_left)
                         {
-                            rect_text = RectAlignL(g, textLine, textMultiLine, textCenterHasIcon, Font, iconPosition, iconratio, icongap, font_size, rect_read, out var rect_l);
+                            rect_text = RectAlignL(g, txt_height, textLine, textCenterHasIcon, Font, iconPosition, iconratio, icongap, font_size, rect_read, out var rect_l);
                             if (has_loading)
                             {
                                 float loading_size = rect_l.Height * .14F;
@@ -1587,14 +1617,14 @@ namespace AntdUI
                         }
                         else
                         {
-                            rect_text = RectAlignR(g, textLine, textMultiLine, Font, iconPosition, iconratio, icongap, font_size, rect_read, out var rect_r);
+                            rect_text = RectAlignR(g, txt_height, textLine, Font, iconPosition, iconratio, icongap, font_size, rect_read, out var rect_r);
 
                             PaintTextArrow(g, rect_r, color);
                         }
                     }
                     else
                     {
-                        int sps = (int)(font_size.Height * .4F), sps2 = sps * 2;
+                        int sps = (int)(txt_height * .4F), sps2 = sps * 2;
                         rect_text = new Rectangle(rect_read.X + sps, rect_read.Y + sps, rect_read.Width - sps2, rect_read.Height - sps2);
                         PaintTextAlign(rect_read, ref rect_text);
                     }
@@ -1603,7 +1633,7 @@ namespace AntdUI
                 {
                     if (has_loading)
                     {
-                        rect_text = RectAlignL(g, textLine, textMultiLine, textCenterHasIcon, Font, iconPosition, iconratio, icongap, font_size, rect_read, out var rect_l);
+                        rect_text = RectAlignL(g, txt_height, textLine, textCenterHasIcon, Font, iconPosition, iconratio, icongap, font_size, rect_read, out var rect_l);
                         float loading_size = rect_l.Height * .14F;
                         using (var brush = new Pen(color, loading_size))
                         {
@@ -1613,7 +1643,7 @@ namespace AntdUI
                     }
                     else
                     {
-                        int sps = (int)(font_size.Height * .4F), sps2 = sps * 2;
+                        int sps = (int)(txt_height * .4F), sps2 = sps * 2;
                         rect_text = new Rectangle(rect_read.X + sps, rect_read.Y + sps, rect_read.Width - sps2, rect_read.Height - sps2);
                         PaintTextAlign(rect_read, ref rect_text);
                     }
@@ -1639,12 +1669,10 @@ namespace AntdUI
             }
         }
 
-        internal static Rectangle RectAlignL(Canvas g, bool textLine, bool textMultiLine, bool textCenter, Font font, TAlignMini iconPosition, float iconratio, float icongap, Size font_size, Rectangle rect_read, out Rectangle rect_l)
+        internal static Rectangle RectAlignL(Canvas g, int font_Height, bool multiLine, bool textCenter, Font font, TAlignMini iconPosition, float iconratio, float icongap, Size font_size, Rectangle rect_read, out Rectangle rect_l)
         {
-            int font_Height = font_size.Height;
-            if (textLine && (iconPosition == TAlignMini.Top || iconPosition == TAlignMini.Bottom)) font_Height = g.MeasureString(Config.NullText, font).Height;
             int icon_size = (int)(font_Height * iconratio), sp = (int)(font_Height * icongap);
-            if (textMultiLine && (iconPosition == TAlignMini.Left || iconPosition == TAlignMini.Right))
+            if (multiLine && (iconPosition == TAlignMini.Left || iconPosition == TAlignMini.Right))
             {
                 int rw = icon_size + sp;
                 if (font_size.Width + rw > rect_read.Width) font_size.Width = rect_read.Width - rw;
@@ -1706,12 +1734,10 @@ namespace AntdUI
             }
             return rect_text;
         }
-        internal static Rectangle RectAlignLR(Canvas g, bool textLine, bool textMultiLine, Font font, TAlignMini iconPosition, float iconratio, float icongap, Size font_size, Rectangle rect_read, out Rectangle rect_l, out Rectangle rect_r)
+        internal static Rectangle RectAlignLR(Canvas g, int font_Height, bool multiLine, Font font, TAlignMini iconPosition, float iconratio, float icongap, Size font_size, Rectangle rect_read, out Rectangle rect_l, out Rectangle rect_r)
         {
-            int font_Height = font_size.Height;
-            if (textLine && (iconPosition == TAlignMini.Top || iconPosition == TAlignMini.Bottom)) font_Height = g.MeasureString(Config.NullText, font).Height;
-            int icon_size = (int)(font_Height * iconratio), sp = (int)(font_Height * icongap), sps = (int)(font_size.Height * .4F);
-            if (textMultiLine && (iconPosition == TAlignMini.Left || iconPosition == TAlignMini.Right))
+            int icon_size = (int)(font_Height * iconratio), sp = (int)(font_Height * icongap), sps = (int)(font_Height * .4F);
+            if (multiLine && (iconPosition == TAlignMini.Left || iconPosition == TAlignMini.Right))
             {
                 int rw = (icon_size + sp) * 2;
                 if (font_size.Width + rw > rect_read.Width) font_size.Width = rect_read.Width - rw;
@@ -1747,12 +1773,10 @@ namespace AntdUI
             }
             return rect_text;
         }
-        internal static Rectangle RectAlignR(Canvas g, bool textLine, bool textMultiLine, Font font, TAlignMini iconPosition, float iconratio, float icongap, Size font_size, Rectangle rect_read, out Rectangle rect_r)
+        internal static Rectangle RectAlignR(Canvas g, int font_Height, bool multiLine, Font font, TAlignMini iconPosition, float iconratio, float icongap, Size font_size, Rectangle rect_read, out Rectangle rect_r)
         {
-            int font_Height = font_size.Height;
-            if (textLine && (iconPosition == TAlignMini.Top || iconPosition == TAlignMini.Bottom)) font_Height = g.MeasureString(Config.NullText, font).Height;
-            int icon_size = (int)(font_Height * iconratio), sp = (int)(font_Height * icongap), sps = (int)(font_size.Height * .4F), rsps = icon_size + sp;
-            if (textMultiLine && (iconPosition == TAlignMini.Left || iconPosition == TAlignMini.Right))
+            int icon_size = (int)(font_Height * iconratio), sp = (int)(font_Height * icongap), sps = (int)(font_Height * .4F), rsps = icon_size + sp;
+            if (multiLine && (iconPosition == TAlignMini.Left || iconPosition == TAlignMini.Right))
             {
                 int rw = icon_size + sp;
                 if (font_size.Width + rw > rect_read.Width) font_size.Width = rect_read.Width - rw;
@@ -2217,32 +2241,40 @@ namespace AntdUI
             {
                 return Helper.GDI(g =>
                 {
-                    var font_size = g.MeasureText(Text ?? Config.NullText, Font);
-                    int gap = (int)(20 * Config.Dpi), wave = (int)(WaveSize * Config.Dpi);
+                    var font_size = MeasureText(g, Text, out int txt_height);
+                    int icon_size = (int)(txt_height * iconratio), gap = (int)(txt_height * 1.02F), wave = (int)(WaveSize * Config.Dpi), wave2 = wave;
+                    int height = Math.Max(font_size.Height, icon_size);
                     if (Shape == TShape.Circle || string.IsNullOrEmpty(Text) || displayStyle == TButtonDisplayStyle.Image)
                     {
-                        int s = font_size.Height + wave + gap;
+                        int s = height + wave + gap;
                         return new Size(s, s);
                     }
                     else
                     {
-                        int m = wave * 2;
-                        if (joinMode > 0) m = 0;
-                        else if (joinLeft || joinRight) m = 0;
-                        bool show_icon = displayStyle == TButtonDisplayStyle.Default, has_icon = (loading && LoadingValue > -1) || (HasIcon && show_icon);
-                        if (has_icon || showArrow)
+                        if (joinMode > 0) wave2 = 0;
+                        else if (joinLeft || joinRight) wave2 = 0;
+                        bool has_icon = (loading && LoadingValue > -1) || (HasIcon && displayStyle == TButtonDisplayStyle.Default);
+                        if (has_icon && showArrow)
                         {
-                            if (has_icon && (IconPosition == TAlignMini.Top || IconPosition == TAlignMini.Bottom))
-                            {
-                                int size = (int)Math.Ceiling(font_size.Height * 1.2F);
-                                return new Size(font_size.Width + m + gap + size, font_size.Height + wave + gap + size);
-                            }
-                            int height = font_size.Height + wave + gap;
-                            if (has_icon && showArrow) return new Size(font_size.Width + m + gap + font_size.Height * 2, height);
-                            else if (has_icon) return new Size(font_size.Width + m + gap + (int)Math.Ceiling(font_size.Height * 1.2F), height);
-                            else return new Size(font_size.Width + m + gap + (int)Math.Ceiling(font_size.Height * .8F), height);
+                            int sp = (int)(txt_height * icongap);
+                            int y = gap + wave, x = y + wave2 + (icon_size + sp) * 2;
+                            if (IconPosition == TAlignMini.Top || IconPosition == TAlignMini.Bottom) return new Size(font_size.Width + y, font_size.Height + x);
+                            else return new Size(font_size.Width + x, height + y);
                         }
-                        else return new Size(font_size.Width + m + gap, font_size.Height + wave + gap);
+                        else if (has_icon)
+                        {
+                            int sp = (int)(txt_height * icongap);
+                            int y = gap + wave, x = y + wave2 + icon_size + sp;
+                            if (IconPosition == TAlignMini.Top || IconPosition == TAlignMini.Bottom) return new Size(font_size.Width + y, font_size.Height + x);
+                            else return new Size(font_size.Width + x, height + y);
+                        }
+                        else if (showArrow)
+                        {
+                            int sp = (int)(txt_height * icongap);
+                            int y = gap + wave, x = y + wave2 + icon_size + sp;
+                            return new Size(font_size.Width + x, height + y);
+                        }
+                        return new Size(font_size.Width + gap + wave + wave2, height + gap + wave);
                     }
                 });
             }

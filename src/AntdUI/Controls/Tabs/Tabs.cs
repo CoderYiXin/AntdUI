@@ -103,7 +103,7 @@ namespace AntdUI
             {
                 if (alignment == value) return;
                 alignment = value;
-                LoadLayout();
+                LoadLayout(true);
                 OnPropertyChanged(nameof(Alignment));
             }
         }
@@ -120,8 +120,25 @@ namespace AntdUI
             {
                 if (centered == value) return;
                 centered = value;
-                LoadLayout();
+                LoadLayout(true);
                 OnPropertyChanged(nameof(Centered));
+            }
+        }
+
+        bool textCenter = false;
+        /// <summary>
+        /// 文本是否居中对齐（仅在Left/Right方向生效）
+        /// </summary>
+        [Description("文本是否居中对齐（仅在Left/Right方向生效）"), Category("外观"), DefaultValue(false)]
+        public bool TextCenter
+        {
+            get => textCenter;
+            set
+            {
+                if (textCenter == value) return;
+                textCenter = value;
+                LoadLayout(true);
+                OnPropertyChanged(nameof(TextCenter));
             }
         }
 
@@ -140,7 +157,7 @@ namespace AntdUI
                 bitblock_l?.Dispose();
                 bitblock_r?.Dispose();
                 bitblock_l = bitblock_r = null;
-                LoadLayout();
+                LoadLayout(true);
                 OnPropertyChanged(nameof(TypExceed));
             }
         }
@@ -231,7 +248,7 @@ namespace AntdUI
                 if (type == value) return;
                 type = value;
                 style = SetType(value);
-                LoadLayout();
+                LoadLayout(true);
                 OnPropertyChanged(nameof(Type));
             }
         }
@@ -267,7 +284,7 @@ namespace AntdUI
             {
                 if (_gap == value) return;
                 _gap = value;
-                LoadLayout();
+                LoadLayout(true);
                 OnPropertyChanged(nameof(Gap));
             }
         }
@@ -284,8 +301,25 @@ namespace AntdUI
             {
                 if (iconratio == value) return;
                 iconratio = value;
-                LoadLayout();
+                LoadLayout(true);
                 OnPropertyChanged(nameof(IconRatio));
+            }
+        }
+
+        float icongap = .25F;
+        /// <summary>
+        /// 图标与文字间距比例
+        /// </summary>
+        [Description("图标与文字间距比例"), Category("外观"), DefaultValue(.25F)]
+        public float IconGap
+        {
+            get => icongap;
+            set
+            {
+                if (icongap == value) return;
+                icongap = value;
+                Invalidate();
+                OnPropertyChanged(nameof(IconGap));
             }
         }
 
@@ -297,7 +331,7 @@ namespace AntdUI
             set
             {
                 _tabMenuVisible = value;
-                LoadLayout();
+                LoadLayout(true);
                 OnPropertyChanged(nameof(TabMenuVisible));
             }
         }
@@ -314,7 +348,7 @@ namespace AntdUI
             {
                 if (_itemSize == value) return;
                 _itemSize = value;
-                LoadLayout();
+                LoadLayout(true);
                 OnPropertyChanged(nameof(ItemSize));
             }
         }
@@ -338,7 +372,7 @@ namespace AntdUI
             return rect_dir;
         }
 
-        public override Rectangle DisplayRectangle => ClientRectangle.PaddingRect(Margin, Padding, _padding);
+        public override Rectangle DisplayRectangle => ClientRectangle.PaddingRect(Padding, _padding);
 
         #region 数据
 
@@ -355,7 +389,11 @@ namespace AntdUI
                 items ??= new TabCollection(this);
                 return items;
             }
-            set => items = value.BindData(this);
+            set
+            {
+                items?.Clear();
+                items = value.BindData(this);
+            }
         }
 
         [Browsable(false)]
@@ -418,16 +456,10 @@ namespace AntdUI
             if (showok)
             {
                 if (items == null) return;
-                if (items.Count > 1)
-                {
-                    for (int i = 0; i < items.Count; i++)
-                    {
-                        if (i == index) continue;
-                        items[i].SetDock(false);
-                    }
-                }
                 if (items.Count <= _select || _select < 0) return;
-                items[_select].SetDock(true);
+                var it = items[_select];
+                if (IsHandleCreated) BeginInvoke(it.BringToFront);
+                else it.BringToFront();
             }
         }
 
@@ -455,26 +487,26 @@ namespace AntdUI
         {
             base.OnHandleCreated(e);
             this.AddListener();
-            LoadLayout(false);
+            LoadLayout();
             showok = true;
             ShowPage(_select);
         }
 
         protected override void OnMarginChanged(EventArgs e)
         {
-            LoadLayout(true);
+            LoadLayout();
             base.OnMarginChanged(e);
         }
 
         protected override void OnFontChanged(EventArgs e)
         {
-            LoadLayout(false);
+            LoadLayout();
             base.OnFontChanged(e);
         }
 
         protected override void OnSizeChanged(EventArgs e)
         {
-            LoadLayout(false);
+            LoadLayout();
             base.OnSizeChanged(e);
         }
 
@@ -490,23 +522,24 @@ namespace AntdUI
             return false;
         }
 
-        internal void LoadLayout(bool r = true)
+        bool CanLayout()
         {
             if (IsHandleCreated)
             {
-                if (items == null) return;
-                if (_tabMenuVisible)
-                {
-                    var rect = ClientRectangle;
-                    if (rect.Width > 0 && rect.Height > 0)
-                    {
-                        var rect_t = rect.DeflateRect(Margin);
-                        style.LoadLayout(this, rect_t, items);
-                        if (r) Invalidate();
-                    }
-                }
+                var rect = ClientRectangle;
+                if (items == null || items.Count == 0 || rect.Width == 0 || rect.Height == 0) return false;
+                return true;
+            }
+            return false;
+        }
+        internal void LoadLayout(bool print = false)
+        {
+            if (CanLayout())
+            {
+                if (_tabMenuVisible) style.LoadLayout(this, ClientRectangle.DeflateRect(Margin), items!);
                 else SetPadding(0, 0, 0, 0);
             }
+            if (print) Invalidate();
         }
 
         #endregion
@@ -1560,7 +1593,7 @@ namespace AntdUI
             switch (id)
             {
                 case EventType.LANG:
-                    LoadLayout(false);
+                    LoadLayout(true);
                     break;
             }
         }
@@ -1579,14 +1612,27 @@ namespace AntdUI
         {
             action = render =>
             {
-                if (render) it.LoadLayout(false);
-                it.Invalidate();
+                if (render) it.LoadLayout(true);
+                else it.Invalidate();
             };
             action_add = item =>
             {
                 item.PARENT = it;
-                item.SetDock(it.Controls.Count == 0);
-                it.Controls.Add(item);
+                bool top = it.Controls.Count == 0;
+                item.Dock = DockStyle.Fill;
+                if (it.InvokeRequired)
+                {
+                    it.Invoke(() =>
+                    {
+                        it.Controls.Add(item);
+                        if (top) item.BringToFront();
+                    });
+                }
+                else
+                {
+                    it.Controls.Add(item);
+                    if (top) item.BringToFront();
+                }
             };
             action_del = (item, index) =>
             {
@@ -1628,17 +1674,6 @@ namespace AntdUI
 
         #region 属性
 
-        DockStyle dock = DockStyle.Fill;
-        /// <summary>
-        /// 定义要绑定到容器的控件边框
-        /// </summary>
-        [Category("布局"), Description("定义要绑定到容器的控件边框"), DefaultValue(DockStyle.Fill)]
-        public new DockStyle Dock
-        {
-            get => dock;
-            set => dock = value;
-        }
-
         Image? icon;
         /// <summary>
         /// 图标
@@ -1651,7 +1686,7 @@ namespace AntdUI
             {
                 if (icon == value) return;
                 icon = value;
-                PARENT?.LoadLayout();
+                PARENT?.LoadLayout(true);
             }
         }
 
@@ -1667,7 +1702,7 @@ namespace AntdUI
             {
                 if (iconSvg == value) return;
                 iconSvg = value;
-                PARENT?.LoadLayout();
+                PARENT?.LoadLayout(true);
             }
         }
 
@@ -1688,7 +1723,7 @@ namespace AntdUI
             {
                 if (readOnly == value) return;
                 readOnly = value;
-                PARENT?.LoadLayout();
+                PARENT?.LoadLayout(true);
             }
         }
 
@@ -1766,7 +1801,7 @@ namespace AntdUI
             {
                 if (text == value) return;
                 base.Text = text = value;
-                PARENT?.LoadLayout();
+                PARENT?.LoadLayout(true);
             }
         }
 
@@ -1800,31 +1835,16 @@ namespace AntdUI
         internal Tabs? PARENT;
         protected override void OnTextChanged(EventArgs e)
         {
-            PARENT?.LoadLayout();
+            PARENT?.LoadLayout(true);
             base.OnTextChanged(e);
         }
         protected override void OnVisibleChanged(EventArgs e)
         {
-            PARENT?.LoadLayout();
+            PARENT?.LoadLayout(true);
             base.OnVisibleChanged(e);
         }
 
         #endregion
-
-        public void SetDock(bool isdock)
-        {
-            if (InvokeRequired)
-            {
-                Invoke(new Action(() => SetDock(isdock)));
-                return;
-            }
-            if (isdock) base.Dock = dock;
-            else
-            {
-                base.Dock = DockStyle.None;
-                Location = new Point(-Width, -Height);
-            }
-        }
 
         public override string ToString() => Text;
     }

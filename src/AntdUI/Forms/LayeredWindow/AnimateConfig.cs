@@ -93,7 +93,7 @@ namespace AntdUI
                     var val = Animation.Animate(i, t, 1F, AnimationType.Ball);
                     SetAnimateValue((byte)(Alpha * (1F - val)));
                     return true;
-                }, 10, t, CallEnd);
+                }, 10, t, CallEnd, 0, true);
                 return true;
             }
             else CallEnd();
@@ -139,7 +139,7 @@ namespace AntdUI
             {
                 try
                 {
-                    bmp_tmp ??= form.PrintBit();
+                    bmp_tmp ??= form.Printmap();
                     if (bmp_tmp == null) return;
                     if (form.Print(bmp_tmp) == RenderResult.Invalid) bmp_tmp = null;
                 }
@@ -236,7 +236,7 @@ namespace AntdUI
                         int height = (int)(_height * val);
                         SetAnimateValue(_y + (_height - height), height, val);
                         return true;
-                    }, 10, t, CallEnd);
+                    }, 10, t, CallEnd, 0, true);
                 }
                 else
                 {
@@ -246,7 +246,7 @@ namespace AntdUI
                         var val = 1F - Animation.Animate(i, t, 1F, AnimationType.Ball);
                         SetAnimateValue((int)(_height * val), val);
                         return true;
-                    }, 10, t, CallEnd);
+                    }, 10, t, CallEnd, 0, true);
                 }
 
                 return true;
@@ -293,17 +293,9 @@ namespace AntdUI
                 {
                     var tr = form.TargetRect;
                     var rect = new Rectangle(tr.X, y, tr.Width, height);
-                    var bmp = new Bitmap(rect.Width, rect.Height);
-                    using (var g = Graphics.FromImage(bmp))
-                    {
-                        bmp_tmp ??= form.PrintBit();
-                        if (bmp_tmp == null) return;
-                        lock (bmp_tmp)
-                        {
-                            g.DrawImage(bmp_tmp, 0, 0, rect.Width, rect.Height);
-                        }
-                    }
-                    form.Print(bmp, rect);
+                    bmp_tmp ??= form.Printmap();
+                    if (bmp_tmp == null) return;
+                    if (form.Print(bmp_tmp, rect) == RenderResult.Invalid) bmp_tmp = null;
                 }
                 catch { }
             }
@@ -321,17 +313,9 @@ namespace AntdUI
                 {
                     var tr = form.TargetRect;
                     var rect = new Rectangle(tr.X, tr.Y, tr.Width, height);
-                    var bmp = new Bitmap(rect.Width, rect.Height);
-                    using (var g = Graphics.FromImage(bmp))
-                    {
-                        bmp_tmp ??= form.PrintBit();
-                        if (bmp_tmp == null) return;
-                        lock (bmp_tmp)
-                        {
-                            g.DrawImage(bmp_tmp, 0, 0, rect.Width, rect.Height);
-                        }
-                    }
-                    form.Print(bmp, rect);
+                    bmp_tmp ??= form.Printmap();
+                    if (bmp_tmp == null) return;
+                    if (form.Print(bmp_tmp, rect) == RenderResult.Invalid) bmp_tmp = null;
                 }
                 catch { }
             }

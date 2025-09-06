@@ -10,11 +10,10 @@
 		<Copyright>Copyright © Tom 2021-2025</Copyright>
 		<Product>AntdUI</Product>
 		<AssemblyTitle>Ant Design Winform UI</AssemblyTitle>
-		<Description>Winform UI library use Ant Design 5.0</Description>
+		<Description>👚 基于 Ant Design 设计语言的 Winform 界面库</Description>
 		<AssemblyVersion>$(Version)</AssemblyVersion>
 		<FileVersion>$(Version)</FileVersion>
-		<Version>2.0.16</Version>
-		<Description>👚 基于 Ant Design 设计语言的 Winform 界面库</Description>
+		<Version>2.1.3</Version>
 		<IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
 		<LangVersion>9.0</LangVersion>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
@@ -23,15 +22,9 @@
 		<RepositoryType>git</RepositoryType>
 		<PackageTags>AntdUI;Winform;WinformUI;AntDesign;UI;Control;Ant;界面库;控件;</PackageTags>
 		<PackageIcon>logo.png</PackageIcon>
-		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageProjectUrl>https://gitee.com/AntdUI</PackageProjectUrl>
 		<PackageRequireLicenseAcceptance>False</PackageRequireLicenseAcceptance>
 		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)'=='Release'">
-		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 	</PropertyGroup>
 
 	<ItemGroup Condition="'$(TargetFramework)'=='net40' OR '$(TargetFramework)'=='net46' OR '$(TargetFramework)'=='net48'">
@@ -40,10 +33,6 @@
 
 	<ItemGroup>
 		<None Include="../logo.png">
-			<Pack>True</Pack>
-			<PackagePath></PackagePath>
-		</None>
-		<None Include="../../README.md">
 			<Pack>True</Pack>
 			<PackagePath></PackagePath>
 		</None>
@@ -62,6 +51,20 @@
 			<Generator>ResXFileCodeGenerator</Generator>
 			<LastGenOutput>Resources.Designer.cs</LastGenOutput>
 		</EmbeddedResource>
+	</ItemGroup>
+
+	<PropertyGroup Condition="'$(Pack)' == 'true'">
+		<GenerateDocumentationFile>True</GenerateDocumentationFile>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<SignAssembly>True</SignAssembly>
+		<AssemblyOriginatorKeyFile>../../key.snk</AssemblyOriginatorKeyFile>
+	</PropertyGroup>
+
+	<ItemGroup Condition="'$(Pack)' == 'true'">
+		<None Include="../../doc/wiki/README.md">
+			<Pack>True</Pack>
+			<PackagePath></PackagePath>
+		</None>
 	</ItemGroup>
 
 </Project>

@@ -88,7 +88,7 @@ namespace Demo {
         }
         
         /// <summary>
-        ///   查找类似 &lt;svg xmlns:xlink=&quot;http://www.w3.org/1999/xlink&quot; viewBox=&quot;0 0 824 140&quot;&gt;&lt;path fill=&quot;#00D379&quot; transform=&quot;scale(2.28898 2.28898)&quot; d=&quot;M339.392 41.4598C339.527 41.7533 339.61 42.0683 339.532 42.3898C339.275 43.4509 338.056 44.7143 337.139 45.2586C336.176 45.83 335.276 45.9465 334.176 46.0066C330.607 46.2015 326.955 46.0427 323.378 46.0364L304.238 46.043C299.846 46.0458 283.113 46.5331 280.137 45.7741C278.922 45.4643 277.949 44.8901 277.299 43.7926C276.666 42.7243 276.367 41.4617 276.213 40.2402C275.766 36.6959 27 [字符串的其余部分被截断]&quot;; 的本地化字符串。
+        ///   查找类似 &lt;svg xmlns:xlink=&quot;http://www.w3.org/1999/xlink&quot; viewBox=&quot;0 0 824 140&quot; width=&quot;140&quot; height=&quot;140&quot;&gt;&lt;path fill=&quot;#00D379&quot; transform=&quot;scale(2.28898 2.28898)&quot; d=&quot;M339.392 41.4598C339.527 41.7533 339.61 42.0683 339.532 42.3898C339.275 43.4509 338.056 44.7143 337.139 45.2586C336.176 45.83 335.276 45.9465 334.176 46.0066C330.607 46.2015 326.955 46.0427 323.378 46.0364L304.238 46.043C299.846 46.0458 283.113 46.5331 280.137 45.7741C278.922 45.4643 277.949 44.8901 277.299 43.7926C276.666 42.7243 276.367 41.4617 276.213 4 [字符串的其余部分被截断]&quot;; 的本地化字符串。
         /// </summary>
         internal static string Battery {
             get {
@@ -129,6 +129,15 @@ namespace Demo {
         internal static string Carousel {
             get {
                 return ResourceManager.GetString("Carousel", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 &lt;svg viewBox=&quot;0 0 1024 1024&quot; width=&quot;140&quot; height=&quot;140&quot;&gt;&lt;path d=&quot;M428.501333 64a64 64 0 0 1 64 64v42.666667a64 64 0 0 1-64 64H128A64 64 0 0 1 64 170.666667V128A64 64 0 0 1 128 64h300.501333z&quot; fill=&quot;#29C287&quot;&gt;&lt;/path&gt;&lt;path d=&quot;M896 305.92a64 64 0 0 1 64 64v42.666667a64 64 0 0 1-64 64H128a64 64 0 0 1-64-64v-42.666667A64 64 0 0 1 128 305.92h768z&quot; fill=&quot;#706EE7&quot;&gt;&lt;/path&gt;&lt;path d=&quot;M584.362667 547.413333a64 64 0 0 1 64 64v42.666667a64 64 0 0 1-64 64H128a64 64 0 0 1-64-64v-42.666667a64 64 0 0 1 64-64h456.362667z&quot; fill=&quot;# [字符串的其余部分被截断]&quot;; 的本地化字符串。
+        /// </summary>
+        internal static string Chart {
+            get {
+                return ResourceManager.GetString("Chart", resourceCulture);
             }
         }
         
@@ -376,7 +385,7 @@ namespace Demo {
         }
         
         /// <summary>
-        ///   查找类似 &lt;svg xmlns:xlink=&quot;http://www.w3.org/1999/xlink&quot; viewBox=&quot;0 0 929 545&quot;&gt;&lt;path fill=&quot;#53C71B&quot; transform=&quot;scale(4.26092 4.26092)&quot; d=&quot;M164.953 13.3737C168.355 13.113 171.945 13.4596 175.243 14.3272C178.834 15.2718 187.295 19.0877 189.186 22.3315C189.181 22.4175 189.17 22.4997 189.149 22.5836C188.887 23.6306 185.526 27.2296 184.587 27.8441C184.528 27.613 184.448 27.3818 184.292 27.1966C180.744 22.9809 173.794 20.7053 168.481 20.3731C163.384 19.6188 156.976 21.8564 152.87 24.8118C151.652 25.6883 150.417 27.2132 14 [字符串的其余部分被截断]&quot;; 的本地化字符串。
+        ///   查找类似 &lt;svg xmlns:xlink=&quot;http://www.w3.org/1999/xlink&quot; viewBox=&quot;0 0 929 545&quot; width=&quot;140&quot; height=&quot;140&quot;&gt;&lt;path fill=&quot;#53C71B&quot; transform=&quot;scale(4.26092 4.26092)&quot; d=&quot;M164.953 13.3737C168.355 13.113 171.945 13.4596 175.243 14.3272C178.834 15.2718 187.295 19.0877 189.186 22.3315C189.181 22.4175 189.17 22.4997 189.149 22.5836C188.887 23.6306 185.526 27.2296 184.587 27.8441C184.528 27.613 184.448 27.3818 184.292 27.1966C180.744 22.9809 173.794 20.7053 168.481 20.3731C163.384 19.6188 156.976 21.8564 152.87 24.8118C151.652 2 [字符串的其余部分被截断]&quot;; 的本地化字符串。
         /// </summary>
         internal static string Singal {
             get {
@@ -394,7 +403,7 @@ namespace Demo {
         }
         
         /// <summary>
-        ///   查找类似 &lt;svg viewBox=&quot;-8 -8 40 40&quot;&gt;&lt;path fill=&quot;#000000&quot; d=&quot;M12 4.5a7.5 7.5 0 1 0 0 15a7.5 7.5 0 0 0 0-15M1.5 12C1.5 6.201 6.201 1.5 12 1.5S22.5 6.201 22.5 12S17.799 22.5 12 22.5S1.5 17.799 1.5 12&quot; fill-opacity=&quot;.1&quot;/&gt;&lt;path fill=&quot;#1677ff&quot; d=&quot;M12 4.5a7.46 7.46 0 0 0-5.187 2.083a1.5 1.5 0 0 1-2.075-2.166A10.46 10.46 0 0 1 12 1.5a1.5 1.5 0 0 1 0 3&quot;/&gt;&lt;/svg&gt; 的本地化字符串。
+        ///   查找类似 &lt;svg viewBox=&quot;-8 -8 40 40&quot; width=&quot;100&quot; height=&quot;100&quot;&gt;&lt;path fill=&quot;#000000&quot; d=&quot;M12 4.5a7.5 7.5 0 1 0 0 15a7.5 7.5 0 0 0 0-15M1.5 12C1.5 6.201 6.201 1.5 12 1.5S22.5 6.201 22.5 12S17.799 22.5 12 22.5S1.5 17.799 1.5 12&quot; fill-opacity=&quot;.1&quot;/&gt;&lt;path fill=&quot;#1677ff&quot; d=&quot;M12 4.5a7.46 7.46 0 0 0-5.187 2.083a1.5 1.5 0 0 1-2.075-2.166A10.46 10.46 0 0 1 12 1.5a1.5 1.5 0 0 1 0 3&quot;/&gt;&lt;/svg&gt; 的本地化字符串。
         /// </summary>
         internal static string Spin {
             get {
@@ -507,6 +516,15 @@ namespace Demo {
         internal static string Tree {
             get {
                 return ResourceManager.GetString("Tree", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   查找类似 &lt;svg viewBox=&quot;0 0 196 118&quot; xmlns:xlink=&quot;http://www.w3.org/1999/xlink&quot;&gt;&lt;defs&gt;&lt;rect id=&quot;path-1&quot; x=&quot;0&quot; y=&quot;0&quot; width=&quot;194&quot; height=&quot;116&quot; rx=&quot;6.4000001&quot;&gt;&lt;/rect&gt;&lt;/defs&gt;&lt;g id=&quot;组件骨架图更新&quot; stroke=&quot;none&quot; stroke-width=&quot;1&quot; fill=&quot;none&quot; fill-rule=&quot;evenodd&quot;&gt;&lt;g id=&quot;🎉-5.0-新版&quot; transform=&quot;translate(-520.000000, -5480.000000)&quot;&gt;&lt;g id=&quot;Ant-Design-5.0&quot; transform=&quot;translate(521.000000, 5481.000000)&quot;&gt;&lt;mask id=&quot;mask-2&quot; fill=&quot;white&quot;&gt;&lt;use xlink:href=&quot;#path-1&quot;&gt;&lt;/use&gt;&lt;/mask&gt;&lt;use id=&quot;蒙版&quot; stroke=&quot;#F0F0F0&quot; stroke-width=&quot;0.8&quot; fill=&quot;#FFFFFF&quot; fi [字符串的其余部分被截断]&quot;; 的本地化字符串。
+        /// </summary>
+        internal static string Watermark {
+            get {
+                return ResourceManager.GetString("Watermark", resourceCulture);
             }
         }
     }

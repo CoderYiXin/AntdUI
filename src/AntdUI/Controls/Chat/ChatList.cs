@@ -62,6 +62,76 @@ namespace AntdUI.Chat
         [Browsable(false)]
         public ScrollBar ScrollBar;
 
+        #region 主题
+
+        /// <summary>
+        /// 选中颜色
+        /// </summary>
+        [Description("选中颜色"), Category("外观"), DefaultValue(typeof(Color), "60, 96, 165, 250")]
+        public Color SelectionColor = Color.FromArgb(60, 96, 165, 250);
+
+        /// <summary>
+        /// 选中颜色(我)
+        /// </summary>
+        [Description("选中颜色(我)"), Category("外观"), DefaultValue(typeof(Color), "96, 165, 250")]
+        public Color SelectionColorMe = Color.FromArgb(96, 165, 250);
+
+        /// <summary>
+        /// 气泡文本颜色(对方)
+        /// </summary>
+        [Description("气泡文本颜色(对方)"), Category("外观"), DefaultValue(null)]
+        public Color? ForeBubble { get; set; }
+
+        /// <summary>
+        /// 气泡背景色(对方)
+        /// </summary>
+        [Description("气泡背景色(对方)"), Category("外观"), DefaultValue(null)]
+        public Color? BackBubble { get; set; }
+
+        /// <summary>
+        /// 气泡激活背景色(对方)
+        /// </summary>
+        [Description("气泡激活背景色(对方)"), Category("外观"), DefaultValue(null)]
+        public Color? BackActiveBubble { get; set; }
+
+        /// <summary>
+        /// 气泡文本颜色(我)
+        /// </summary>
+        [Description("气泡文本颜色(我)"), Category("外观"), DefaultValue(null)]
+        public Color? ForeBubbleMe { get; set; }
+
+        /// <summary>
+        /// 气泡背景色(我)
+        /// </summary>
+        [Description("气泡背景色(我)"), Category("外观"), DefaultValue(null)]
+        public Color? BackBubbleMe { get; set; }
+
+        /// <summary>
+        /// 气泡激活背景色(我)
+        /// </summary>
+        [Description("气泡激活背景色(我)"), Category("外观"), DefaultValue(null)]
+        public Color? BackActiveBubbleMe { get; set; }
+
+        #endregion
+
+        /// <summary>
+        /// 隐藏图标
+        /// </summary>
+        [Description("隐藏图标"), Category("外观"), DefaultValue(false)]
+        public bool IconLess { get; set; }
+
+        /// <summary>
+        /// 每项之间的间隙
+        /// </summary>
+        [Description("每项之间的间隙"), Category("外观"), DefaultValue(0)]
+        public int ItemGap { get; set; }
+
+        /// <summary>
+        /// 气泡间隙
+        /// </summary>
+        [Description("气泡间隙"), Category("外观"), DefaultValue(.75F)]
+        public float BubbleGap { get; set; } = .75F;
+
         #endregion
 
         #region 方法
@@ -92,9 +162,39 @@ namespace AntdUI.Chat
             }
         }
 
-        public void ToBottom()
+        public void ToBottom() => ScrollBar.Value = ScrollBar.VrValueI;
+
+        /// <summary>
+        /// 滚动到指定行
+        /// </summary>
+        /// <param name="i">行</param>
+        /// <param name="force">是否强制滚动</param>
+        /// <returns>返回滚动量</returns>
+        public int ScrollLine(int i, bool force = false)
         {
-            ScrollBar.Value = ScrollBar.VrValueI;
+            if (items == null || !ScrollBar.ShowY) return 0;
+            return ScrollLine(i, items, force);
+        }
+
+        int ScrollLine(int i, ChatItemCollection items, bool force = false)
+        {
+            if (!ScrollBar.ShowY) return 0;
+            var selectRow = items[i];
+            int sy = ScrollBar.ValueY;
+            if (force)
+            {
+                ScrollBar.ValueY = items[i].rect.Y;
+                return sy - ScrollBar.ValueY;
+            }
+            else
+            {
+                if (selectRow.rect.Y < sy || selectRow.rect.Bottom > sy + Height)
+                {
+                    ScrollBar.ValueY = items[i].rect.Y;
+                    return sy - ScrollBar.ValueY;
+                }
+            }
+            return 0;
         }
 
         #endregion
@@ -111,7 +211,18 @@ namespace AntdUI.Chat
             var g = e.Canvas;
             float sy = ScrollBar.Value, radius = Config.Dpi * 8F;
             g.TranslateTransform(0, -sy);
-            foreach (var it in items) PaintItem(g, it, e.Rect, sy, radius);
+            using (var selection = new SolidBrush(SelectionColor))
+            using (var selectionme = new SolidBrush(SelectionColorMe))
+            using (var foreBubble = new SolidBrush(ForeBubble ?? Color.Black))
+            using (var bgBubble = new SolidBrush(BackBubble ?? Color.White))
+            using (var bgActiveBubble = new SolidBrush(BackActiveBubble ?? Colour.FillQuaternary.Get("ChatList", ColorScheme)))
+
+            using (var foreBubbleme = new SolidBrush(ForeBubbleMe ?? Color.White))
+            using (var bgBubbleme = new SolidBrush(BackBubbleMe ?? Color.FromArgb(0, 153, 255)))
+            using (var bgActiveBubbleme = new SolidBrush(BackActiveBubbleMe ?? Color.FromArgb(0, 134, 224)))
+            {
+                foreach (var it in items) PaintItem(g, it, e.Rect, sy, radius, selection, selectionme, foreBubble, bgBubble, bgActiveBubble, foreBubbleme, bgBubbleme, bgActiveBubbleme);
+            }
             g.ResetTransform();
             ScrollBar.Paint(g);
             base.OnDraw(e);
@@ -119,9 +230,9 @@ namespace AntdUI.Chat
 
         StringFormat SFL = Helper.SF(tb: StringAlignment.Near);
 
-        void PaintItem(Canvas g, IChatItem it, Rectangle rect, float sy, float radius)
+        void PaintItem(Canvas g, IChatItem it, Rectangle rect, float sy, float radius, SolidBrush selection, SolidBrush selectionme, SolidBrush forebubble, SolidBrush bgbubble, SolidBrush bgActiveBubble, SolidBrush forebubbleme, SolidBrush bgbubbleme, SolidBrush bgActiveBubbleme)
         {
-            it.show = it.Show && it.rect.Y > sy - rect.Height - it.rect.Height && it.rect.Bottom < ScrollBar.Value + ScrollBar.ReadSize + it.rect.Height;
+            it.show = it.rect.Y > sy - rect.Height - it.rect.Height && it.rect.Bottom < ScrollBar.Value + ScrollBar.ReadSize + it.rect.Height;
             if (it.show)
             {
                 if (it is TextChatItem text)
@@ -134,48 +245,39 @@ namespace AntdUI.Chat
                         }
                         if (text.Me)
                         {
-                            g.Fill(Color.FromArgb(0, 153, 255), path);
-                            if (text.selectionLength > 0) g.Fill(Color.FromArgb(0, 134, 224), path);
-                            using (var brush = new SolidBrush(Color.White))
-                            {
-                                PaintItemText(g, text, brush);
-                            }
+                            g.Fill(bgbubbleme, path);
+                            if (text.selectionLength > 0) g.Fill(bgActiveBubbleme, path);
+                            PaintItemText(g, text, forebubbleme, selectionme);
                         }
                         else
                         {
-                            g.Fill(Brushes.White, path);
-                            if (text.selectionLength > 0) g.Fill(Colour.FillQuaternary.Get("ChatList", ColorScheme), path);
-                            using (var brush = new SolidBrush(Color.Black))
-                            {
-                                PaintItemText(g, text, brush);
-                            }
+                            g.Fill(bgbubble, path);
+                            if (text.selectionLength > 0) g.Fill(bgActiveBubble, path);
+                            PaintItemText(g, text, forebubble, selection);
                         }
                     }
+                    if (IconLess) return;
                     if (text.Icon != null) g.Image(text.rect_icon, text.Icon, TFit.Cover, 0, true);
-
                 }
             }
         }
 
-        void PaintItemText(Canvas g, TextChatItem text, SolidBrush fore)
+        void PaintItemText(Canvas g, TextChatItem text, SolidBrush fore, SolidBrush selection)
         {
             if (text.selectionLength > 0)
             {
                 int end = text.selectionStartTemp + text.selectionLength - 1;
                 if (end > text.cache_font.Length - 1) end = text.cache_font.Length - 1;
                 CacheFont first = text.cache_font[text.selectionStartTemp];
-                using (var brush = new SolidBrush(Color.FromArgb(text.Me ? 255 : 60, 96, 165, 250)))
+                for (int i = text.selectionStartTemp; i <= end; i++)
                 {
-                    for (int i = text.selectionStartTemp; i <= end; i++)
+                    var last = text.cache_font[i];
+                    if (i == end) g.Fill(selection, new Rectangle(first.rect.X, first.rect.Y, last.rect.Right - first.rect.X, first.rect.Height));
+                    else if (first.rect.Y != last.rect.Y || last.retun)
                     {
-                        var last = text.cache_font[i];
-                        if (i == end) g.Fill(brush, new Rectangle(first.rect.X, first.rect.Y, last.rect.Right - first.rect.X, first.rect.Height));
-                        else if (first.rect.Y != last.rect.Y || last.retun)
-                        {
-                            last = text.cache_font[i - 1];
-                            g.Fill(brush, new Rectangle(first.rect.X, first.rect.Y, last.rect.Right - first.rect.X, first.rect.Height));
-                            first = text.cache_font[i];
-                        }
+                        last = text.cache_font[i - 1];
+                        g.Fill(selection, new Rectangle(first.rect.X, first.rect.Y, last.rect.Right - first.rect.X, first.rect.Height));
+                        first = text.cache_font[i];
                     }
                 }
             }
@@ -543,40 +645,103 @@ namespace AntdUI.Chat
 
         protected override void OnFontChanged(EventArgs e)
         {
-            ChangeList();
+            font_dir.Clear();
             base.OnFontChanged(e);
+            LoadLayout();
         }
 
         protected override void OnSizeChanged(EventArgs e)
         {
-            ChangeList();
             base.OnSizeChanged(e);
+            LoadLayout();
         }
 
-        internal void ChangeList()
+        protected override void OnHandleCreated(EventArgs e)
         {
-            var rect = ClientRectangle;
-            if (items == null || items.Count == 0 || (rect.Width == 0 || rect.Height == 0)) return;
-            int y = 0;
-            Helper.GDI(g =>
+            base.OnHandleCreated(e);
+            LoadLayout();
+        }
+
+        bool CanLayout()
+        {
+            if (IsHandleCreated)
             {
-                var size = g.MeasureString(Config.NullText, Font).Height;
-                int item_height = (int)Math.Ceiling(size * 1.714),
-                    gap = (int)Math.Round(item_height * .75),
-                    spilt = item_height - gap, spilt2 = spilt * 2, max_width = (int)(rect.Width * .8F) - item_height;
-                y = spilt;
-                foreach (var it in items)
+                var rect = ClientRectangle;
+                if (items == null || items.Count == 0 || rect.Width == 0 || rect.Height == 0) return false;
+                return true;
+            }
+            return false;
+        }
+
+        int oldy = 0;
+        internal void LoadLayout(bool print = false)
+        {
+            if (CanLayout())
+            {
+                var rect = ClientRectangle;
+                int y = Helper.GDI(g =>
                 {
-                    it.PARENT = this;
-                    if (it is TextChatItem text) y += text.SetRect(rect, y, g, Font, FixFontWidth(g, Font, text, max_width, spilt2), size, spilt, spilt2, item_height) + gap;
+                    int y = 0;
+                    var size = g.MeasureString(Config.NullText, Font).Height;
+                    int item_height = (int)Math.Ceiling(size * 1.714),
+                        gap = (int)Math.Round(item_height * BubbleGap),
+                        itemGap = (int)(ItemGap * Config.Dpi),
+                        spilt = item_height - gap, spilt2 = spilt * 2, max_width = (int)(rect.Width * .8F) - item_height;
+                    y = spilt;
+                    foreach (var it in items!)
+                    {
+                        it.PARENT = this;
+                        if (it is TextChatItem text) y += text.SetRect(rect, y, g, Font, FixFontWidth(g, Font, text, max_width, spilt2), size, spilt, spilt2, item_height, IconLess) + gap + itemGap;
+                    }
+                    return y;
+                });
+                oldy = y;
+                ScrollBar.SetVrSize(y);
+                ScrollBar.SizeChange(rect);
+            }
+            if (print) Invalidate();
+        }
+        internal void LoadLayout(TextChatItem chatItem, bool print = false)
+        {
+            if (CanLayout())
+            {
+                int index = items!.IndexOf(chatItem);
+                if (index == items.Count - 1)
+                {
+                    var rect = ClientRectangle;
+                    int old = chatItem.rect.Height;
+                    Helper.GDI(g =>
+                    {
+                        var size = g.MeasureString(Config.NullText, Font).Height;
+                        int item_height = (int)Math.Ceiling(size * 1.714),
+                            gap = (int)Math.Round(item_height * BubbleGap),
+                            itemGap = (int)(ItemGap * Config.Dpi),
+                            spilt = item_height - gap, spilt2 = spilt * 2, max_width = (int)(rect.Width * .8F) - item_height;
+
+                        int newh = chatItem.SetRect(rect, chatItem.rect.Y, g, Font, FixFontWidth(g, Font, chatItem, max_width, spilt2), size, spilt, spilt2, item_height, IconLess);
+                        if (old == newh) return;
+                        else
+                        {
+                            int y = oldy + (newh - old);
+                            oldy = y;
+                            ScrollBar.SetVrSize(y);
+                        }
+                    });
                 }
-            });
-            ScrollBar.SetVrSize(y);
-            ScrollBar.SizeChange(rect);
-            return;
+                else
+                {
+                    LoadLayout(print);
+                    return;
+                }
+            }
+            if (print) Invalidate();
         }
 
         #region 字体
+
+        Dictionary<string, Size> font_dir = new Dictionary<string, Size>();
+
+        public void ClearCache() => font_dir.Clear();
 
         internal Size FixFontWidth(Canvas g, Font Font, TextChatItem item, int max_width, int spilt)
         {
@@ -630,13 +795,13 @@ namespace AntdUI.Chat
                         {
                             if (it == "\t" || it == "\n" || it == "\r\n")
                             {
-                                var sizefont = g.MeasureString(" ", Font);
+                                var sizefont = FixFontWidth(g);
                                 if (font_height < sizefont.Height) font_height = sizefont.Height;
-                                font_widths.Add(new CacheFont(it, false, (int)Math.Ceiling(sizefont.Width * 8F), type));
+                                font_widths.Add(new CacheFont(it, false, sizefont.Width, type));
                             }
                             else
                             {
-                                var sizefont = g.MeasureString(it, Font);
+                                var sizefont = FixFontWidth(g, it);
                                 if (font_height < sizefont.Height) font_height = sizefont.Height;
                                 font_widths.Add(new CacheFont(it, false, sizefont.Width, type));
                             }
@@ -695,6 +860,29 @@ namespace AntdUI.Chat
             return new Size(maxx + spilt, maxy + spilt);
         }
 
+        Size FixFontWidth(Canvas g)
+        {
+            string text = " ";
+            if (font_dir.TryGetValue(text, out var sizefont)) return sizefont;
+            else
+            {
+                var size = g.MeasureString(text, Font);
+                size.Width = (int)Math.Ceiling(size.Width * 8F);
+                font_dir.Add(text, size);
+                return size;
+            }
+        }
+        Size FixFontWidth(Canvas g, string text)
+        {
+            if (font_dir.TryGetValue(text, out var sizefont)) return sizefont;
+            else
+            {
+                var size = g.MeasureString(text, Font);
+                font_dir.Add(text, size);
+                return size;
+            }
+        }
+
         #endregion
 
         #endregion
@@ -711,8 +899,8 @@ namespace AntdUI.Chat
         {
             action = render =>
             {
-                if (render) it.ChangeList();
-                it.Invalidate();
+                if (render) it.LoadLayout(true);
+                else it.Invalidate();
             };
             return this;
         }
@@ -792,7 +980,8 @@ namespace AntdUI.Chat
             {
                 if (_text == value) return;
                 _text = value;
-                Invalidates();
+                if (loading) PARENT?.LoadLayout(this, true);
+                else Invalidates();
             }
         }
 
@@ -824,19 +1013,21 @@ namespace AntdUI.Chat
 
         #region 布局
 
-        internal int SetRect(Rectangle _rect, int y, Canvas g, Font font, Size msglen, int gap, int spilt, int spilt2, int image_size)
+        internal int SetRect(Rectangle _rect, int y, Canvas g, Font font, Size msglen, int gap, int spilt, int spilt2, int image_size, bool iconLess = false)
         {
             if (string.IsNullOrEmpty(_name))
             {
                 rect = new Rectangle(_rect.X, _rect.Y + y, _rect.Width, msglen.Height);
                 if (Me)
                 {
-                    rect_icon = new Rectangle(rect.Right - gap - image_size, rect.Y, image_size, image_size);
+                    if (iconLess) rect_icon = new Rectangle(rect.Right, rect.Y, 0, 0);
+                    else rect_icon = new Rectangle(rect.Right - gap - image_size, rect.Y, image_size, image_size);
                     rect_read = new Rectangle(rect_icon.X - spilt - msglen.Width, rect_icon.Y, msglen.Width, msglen.Height);
                 }
                 else
                 {
-                    rect_icon = new Rectangle(rect.X + gap, rect.Y, image_size, image_size);
+                    if (iconLess) rect_icon = new Rectangle(0, rect.Y, 0, 0);
+                    else rect_icon = new Rectangle(rect.X + gap, rect.Y, image_size, image_size);
                     rect_read = new Rectangle(rect_icon.Right + spilt, rect_icon.Y, msglen.Width, msglen.Height);
                 }
             }
@@ -846,25 +1037,23 @@ namespace AntdUI.Chat
                 var size_name = g.MeasureString(_name, font).Width;
                 if (Me)
                 {
-                    rect_icon = new Rectangle(rect.Right - gap - image_size, rect.Y, image_size, image_size);
+                    if (iconLess) rect_icon = new Rectangle(rect.Right, rect.Y, 0, 0);
+                    else rect_icon = new Rectangle(rect.Right - gap - image_size, rect.Y, image_size, image_size);
                     rect_name = new Rectangle(rect_icon.X - spilt - msglen.Width + msglen.Width - size_name, rect_icon.Y, size_name, gap);
                     rect_read = new Rectangle(rect_icon.X - spilt - msglen.Width, rect_name.Bottom, msglen.Width, msglen.Height);
                 }
                 else
                 {
-                    rect_icon = new Rectangle(rect.X + gap, rect.Y, image_size, image_size);
+                    if (iconLess) rect_icon = new Rectangle(0, rect.Y, 0, 0);
+                    else rect_icon = new Rectangle(rect.X + gap, rect.Y, image_size, image_size);
                     rect_name = new Rectangle(rect_icon.Right + spilt, rect_icon.Y, size_name, gap);
                     rect_read = new Rectangle(rect_name.X, rect_name.Bottom, msglen.Width, msglen.Height);
                 }
             }
             rect_text = new Rectangle(rect_read.X + spilt, rect_read.Y + spilt, msglen.Width - spilt2, msglen.Height - spilt2);
 
-            foreach (var it in cache_font)
-            {
-                it.SetOffset(rect_text.Location);
-            }
+            foreach (var it in cache_font) it.SetOffset(rect_text.X, rect_text.Y);
 
-            Show = true;
             return rect.Height;
         }
 
@@ -961,7 +1150,8 @@ namespace AntdUI.Chat
 
         #endregion
     }
-    public class IChatItem
+
+    public abstract class IChatItem
     {
         public IChatItem() { }
 
@@ -971,22 +1161,16 @@ namespace AntdUI.Chat
         [Description("用户定义数据"), Category("数据"), DefaultValue(null)]
         public object? Tag { get; set; }
 
-        internal void Invalidate() => PARENT?.Invalidate();
-        internal void Invalidates()
-        {
-            if (PARENT == null) return;
-            PARENT.ChangeList();
-            PARENT.Invalidate();
-        }
+        public void Invalidate() => PARENT?.Invalidate();
+        public void Invalidates() => PARENT?.LoadLayout(true);
 
         internal bool show { get; set; }
-        internal bool Show { get; set; }
 
-        internal ChatList? PARENT { get; set; }
+        public ChatList? PARENT { get; set; }
 
-        internal Rectangle rect { get; set; }
+        public Rectangle rect { get; set; }
 
-        internal bool Contains(Point point, int x, int y) => rect.Contains(new Point(point.X + x, point.Y + y));
+        public bool Contains(Point point, int x, int y) => rect.Contains(new Point(point.X + x, point.Y + y));
     }
 
     internal class CacheFont
@@ -1006,10 +1190,7 @@ namespace AntdUI.Chat
             get => _rect;
             set { _rect = value; }
         }
-        internal void SetOffset(Point point)
-        {
-            _rect.Offset(point);
-        }
+        internal void SetOffset(int x, int y) => _rect.Offset(x, y);
         public bool emoji { get; set; }
         public bool retun { get; set; }
         public int width { get; set; }

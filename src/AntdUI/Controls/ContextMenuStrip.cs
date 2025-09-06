@@ -108,6 +108,12 @@ namespace AntdUI
             /// </summary>
             public int Radius { get; set; } = 6;
 
+            public float Gap { get; set; } = 0.286F;
+            public float IconRatio { get; set; } = 1.14F;
+            public float IconGap { get; set; } = 0.6F;
+            public float CheckRatio { get; set; } = 0.8F;
+            public float[] PaddRatio { get; set; } = new float[] { 0.72F, 0.432F };
+
             /// <summary>
             /// 是否置顶
             /// </summary>
@@ -137,6 +143,99 @@ namespace AntdUI
             /// 点击回调
             /// </summary>
             public Action<ContextMenuStripItem> Call { get; set; }
+
+            #region 设置
+
+            public Config SetFont(Font? value)
+            {
+                Font = value;
+                return this;
+            }
+
+            public Config SetRadius(int value = 0)
+            {
+                Radius = value;
+                return this;
+            }
+
+            #region 比例
+
+            /// <summary>
+            /// 设置全局缩放比例
+            /// </summary>
+            public Config SetRatio(float value = 0.7F)
+            {
+                Gap = 0.286F * value;
+                IconRatio = 1.14F * value;
+                IconGap = 0.6F * value;
+                CheckRatio = 0.8F * value;
+                PaddRatio = new float[] { 0.72F * value, 0.432F * value };
+                return this;
+            }
+            public Config SetGap(float value)
+            {
+                Gap = value;
+                return this;
+            }
+            public Config SetIconRatio(float value)
+            {
+                IconRatio = value;
+                return this;
+            }
+            public Config SetIconGap(float value)
+            {
+                IconGap = value;
+                return this;
+            }
+            public Config SetCheckRatio(float value)
+            {
+                CheckRatio = value;
+                return this;
+            }
+            public Config SetPaddRatio(float value)
+            {
+                PaddRatio = new float[] { value, value };
+                return this;
+            }
+            public Config SetPaddRatio(float x, int y)
+            {
+                PaddRatio = new float[] { x, y };
+                return this;
+            }
+
+            #endregion
+
+            public Config SetTopMost(bool value = true)
+            {
+                TopMost = value;
+                return this;
+            }
+
+            public Config SetAlign(TAlign value = TAlign.BR)
+            {
+                Align = value;
+                return this;
+            }
+
+            public Config SetUFocus(bool value = true)
+            {
+                UFocus = value;
+                return this;
+            }
+
+            public Config SetCallSleep(int value = 100)
+            {
+                CallSleep = value;
+                return this;
+            }
+
+            public Config SetLocation(Point? value)
+            {
+                Location = value;
+                return this;
+            }
+
+            #endregion
         }
     }
 

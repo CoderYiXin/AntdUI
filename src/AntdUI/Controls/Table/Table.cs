@@ -35,7 +35,7 @@ namespace AntdUI
     [Description("Table 表格")]
     [DefaultEvent("CellClick")]
     [ToolboxItem(true)]
-    public partial class Table : IControl, IEventListener
+    public partial class Table : IControl, IEventListener, IScrollBar
     {
         #region 属性
 
@@ -80,6 +80,7 @@ namespace AntdUI
                 CellRanges = null;
                 dataSource = value;
                 SortData = null;
+                focusedCell = null;
                 ScrollBar.Clear();
                 ExtractHeaderFixed();
                 ExtractData();
@@ -240,14 +241,26 @@ namespace AntdUI
         /// <summary>
         /// 行复制
         /// </summary>
-        [Description("行复制"), Category("行为"), DefaultValue(true)]
+        [Description("行/列复制"), Category("行为"), DefaultValue(true)]
         public bool ClipboardCopy { get; set; } = true;
+
+        /// <summary>
+        /// 是否启用单元格复制
+        /// </summary>
+        [Description("是否启用单元格复制"), Category("行为"), DefaultValue(false)]
+        public bool ClipboardCopyFocusedCell { get; set; }
 
         /// <summary>
         /// 列宽自动调整模式
         /// </summary>
         [Description("列宽自动调整模式"), Category("行为"), DefaultValue(ColumnsMode.Auto)]
         public ColumnsMode AutoSizeColumnsMode { get; set; } = ColumnsMode.Auto;
+
+        /// <summary>
+        /// 虚拟模式
+        /// </summary>
+        [Description("虚拟模式"), Category("外观"), DefaultValue(false)]
+        public bool VirtualMode { get; set; }
 
         #region 间距
 
@@ -289,8 +302,8 @@ namespace AntdUI
         /// <summary>
         /// 单元格内间距
         /// </summary>
-        [Description("单元格内间距"), Category("外观"), DefaultValue(null)]
-        public int? GapCell { get; set; }
+        [Description("单元格内间距"), Category("外观"), DefaultValue(6)]
+        public int? GapCell { get; set; } = 6;
 
         [Description("单元格调整高度"), Category("边框"), DefaultValue(null)]
         public bool? CellImpactHeight { get; set; }
@@ -433,17 +446,20 @@ namespace AntdUI
         /// <summary>
         /// 当前获得焦点的列
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public Column? FocusedColumn => focusedCell?.COLUMN;
 
         /// <summary>
         /// 当前获得焦点的行
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public object? FocusedRow => focusedCell?.ROW.RECORD;
 
         CELL? focusedCell;
         /// <summary>
         /// 当前获得焦点的单元格
         /// </summary>
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public CELL? FocusedCell
         {
             get => focusedCell;
@@ -772,7 +788,7 @@ namespace AntdUI
         {
             get
             {
-                if (dataTmp == null) return 0;
+                if (dataTmp == null || dataTmp.rows.Length == 0) return 0;
                 int count = dataTmp.rows.Length;
                 var keyTree = KeyTreeCurrent;
                 if (keyTree == null) return count;
@@ -999,8 +1015,41 @@ namespace AntdUI
         int ScrollLine(int i, RowTemplate[] rows, bool force = false)
         {
             if (!ScrollBar.ShowY) return 0;
-            var selectRow = rows[i];
             int sy = ScrollBar.ValueY;
+            if (VirtualMode && _RowHeight.HasValue)
+            {
+                if (dataTmp == null) return 0;
+                int len = dataTmp.rows.Length * _RowHeight.Value;
+                var prog = (_RowHeight.Value * i) * 1F / len;
+                int y = (int)Math.Round(len * prog);
+                if (force)
+                {
+                    if (fixedHeader) ScrollBar.ValueY = y - rows[0].RECT.Height;
+                    else ScrollBar.ValueY = y;
+                    return sy - ScrollBar.ValueY;
+                }
+                else
+                {
+                    int b = y + _RowHeight.Value;
+                    if (visibleHeader && fixedHeader)
+                    {
+                        if (y - rows[0].RECT.Height < sy || b > sy + rect_read.Height)
+                        {
+                            if (fixedHeader) ScrollBar.ValueY = y - rows[0].RECT.Height;
+                            else ScrollBar.ValueY = y;
+                            return sy - ScrollBar.ValueY;
+                        }
+                    }
+                    else if (y < sy || b > sy + rect_read.Height)
+                    {
+                        if (fixedHeader) ScrollBar.ValueY = y - rows[0].RECT.Height;
+                        else ScrollBar.ValueY = y;
+                        return sy - ScrollBar.ValueY;
+                    }
+                }
+                return 0;
+            }
+            var selectRow = rows[i];
             if (force)
             {
                 if (fixedHeader) ScrollBar.ValueY = rows[i].RECT.Y - rows[0].RECT.Height;
@@ -1098,6 +1147,27 @@ namespace AntdUI
         }
 
         /// <summary>
+        /// 复制表格数据
+        /// </summary>
+        /// <param name="row">行</param>
+        /// <param name="column">列</param>
+        public bool CopyData(CELL cell)
+        {
+            if (cell != null)
+            {
+                try
+                {
+                    var vals = cell.VALUE?.ToString();
+                    if (vals == null) return false;
+                    this.ClipboardSetText(vals);
+                    return true;
+                }
+                catch { }
+            }
+            return false;
+        }
+
+        /// <summary>
         /// 获取排序序号
         /// </summary>
         public int[] SortIndex()
@@ -1153,7 +1223,7 @@ namespace AntdUI
                 if (LoadLayout()) Invalidate();
                 return;
             }
-            if (dataTmp == null) return;
+            if (dataTmp == null || dataTmp.rows.Length == 0) return;
             var list = new List<int>(dataTmp.rows.Length);
             foreach (var it in data)
             {
@@ -1251,7 +1321,7 @@ namespace AntdUI
         /// <param name="toString">使用toString</param>
         public DataTable? ToDataTable(bool enableRender = true, bool toString = true)
         {
-            if (dataTmp == null) return null;
+            if (dataTmp == null || dataTmp.rows.Length == 0) return null;
             var dt = new DataTable();
 
             Dictionary<string, Column> dir_columns;

@@ -220,7 +220,7 @@ namespace AntdUI
                 if (selectItem == value) return;
                 selectItem = value;
                 if (value == null) USelect(false);
-                else Select(value);
+                else Select(value, false);
             }
         }
 
@@ -366,20 +366,29 @@ namespace AntdUI
             ChangeList();
         }
 
-        internal void ChangeList(bool print = false)
+        bool CanLayout()
         {
-            var rect = ClientRectangle;
-            if (pauseLayout || items == null || items.Count == 0 || rect.Width == 0 || rect.Height == 0) return;
             if (IsHandleCreated)
             {
+                var rect = ClientRectangle;
+                if (pauseLayout || items == null || items.Count == 0 || rect.Width == 0 || rect.Height == 0) return false;
+                return true;
+            }
+            return false;
+        }
+        internal void ChangeList(bool print = false)
+        {
+            if (CanLayout())
+            {
+                var rect = ClientRectangle;
                 int x = 0, y = 0;
-                bool has = HasSub(items);
+                bool has = HasSub(items!);
                 Helper.GDI(g =>
                 {
                     var size = g.MeasureString(Config.NullText, Font);
                     int icon_size = (int)(size.Height * iconratio), depth_gap = GapIndent.HasValue ? (int)(GapIndent.Value * Config.Dpi) : icon_size, gap = (int)(_gap * Config.Dpi), gapI = gap / 2, height = icon_size + gap * 2;
                     check_radius = icon_size * .2F;
-                    if (CheckStrictly && has && items[0].PARENT == null && items[0].PARENTITEM == null)
+                    if (CheckStrictly && has && items![0].PARENT == null && items[0].PARENTITEM == null)
                     {
                         //新数据
                         var dir = new List<TreeItem>();
@@ -393,12 +402,12 @@ namespace AntdUI
                             else item.CheckState = CheckState.Unchecked;
                         }
                     }
-                    ChangeList(g, rect, null, items, has, ref x, ref y, height, depth_gap, icon_size, gap, gapI, 0, true);
+                    ChangeList(g, rect, null, items!, has, ref x, ref y, height, depth_gap, icon_size, gap, gapI, 0, true);
                 });
                 ScrollBar.SetVrSize(x, y);
                 ScrollBar.SizeChange(rect);
-                if (print) Invalidate();
             }
+            if (print) Invalidate();
         }
 
         bool HasSub(TreeItemCollection items)
@@ -878,7 +887,7 @@ namespace AntdUI
             return false;
         }
 
-        void SetCheck(TreeItem item, bool value)
+        public void SetCheck(TreeItem item, bool value)
         {
             if (item.items != null && item.items.Count > 0)
             {
@@ -890,7 +899,7 @@ namespace AntdUI
             }
         }
 
-        void SetCheckStrictly(TreeItem? item)
+        public void SetCheckStrictly(TreeItem? item)
         {
             if (item == null) return;
             int check_all_count = 0, check_count = 0;
@@ -981,14 +990,162 @@ namespace AntdUI
 
         #endregion
 
+        #region 键盘
+
+        protected override bool ProcessCmdKey(ref System.Windows.Forms.Message msg, Keys keyData)
+        {
+            var r = base.ProcessCmdKey(ref msg, keyData);
+            switch (keyData)
+            {
+                case Keys.Up:
+                    if (selectItem == null)
+                    {
+                        if (items != null)
+                        {
+                            Select(items[0]);
+                            return true;
+                        }
+                    }
+                    else if (FindUp(selectItem)) return true;
+                    break;
+                case Keys.Down:
+                    if (selectItem == null)
+                    {
+                        if (items != null)
+                        {
+                            Select(items[items.Count - 1]);
+                            return true;
+                        }
+                    }
+                    else if (FindDown(selectItem)) return true;
+                    break;
+                case Keys.Left:
+                    if (selectItem != null && FindLeft(selectItem)) return true;
+                    break;
+                case Keys.Right:
+                    if (selectItem != null && FindRight(selectItem)) return true;
+                    break;
+                case Keys.Enter:
+                    if (selectItem != null)
+                    {
+                        var item = selectItem;
+                        if (item.ICanExpand) item.Expand = !item.Expand;
+                        else Select(item);
+                    }
+                    break;
+            }
+            return r;
+        }
+
+        bool FindUp(TreeItem item)
+        {
+            var p1 = item.PARENTITEM;
+            if (p1 == null)
+            {
+                int index = items!.IndexOf(item) - 1;
+                if (index >= 0)
+                {
+                    Select(items[index]);
+                    return true;
+                }
+            }
+            else
+            {
+                int index = p1.items!.IndexOf(item) - 1;
+                if (index >= 0) Select(FindUpExpand(p1.items[index]));
+                else Select(p1);
+                return true;
+            }
+            return false;
+        }
+        TreeItem FindUpExpand(TreeItem it)
+        {
+            if (it.ICanExpand && it.Expand) return FindUpExpand(it.items![it.items.Count - 1]);
+            return it;
+        }
+        bool FindDown(TreeItem item, bool canex = true)
+        {
+            if (canex && item.ICanExpand && item.Expand)
+            {
+                Select(item.items![0]);
+                return true;
+            }
+            var p1 = item.PARENTITEM;
+            if (p1 == null)
+            {
+                int index = items!.IndexOf(item) + 1;
+                if (index < items.Count)
+                {
+                    Select(items[index]);
+                    return true;
+                }
+            }
+            else
+            {
+                int index = p1.items!.IndexOf(item) + 1;
+                if (index < p1.items.Count)
+                {
+                    Select(p1.items[index]);
+                    return true;
+                }
+                else
+                {
+                    if (p1.PARENTITEM == null)
+                    {
+                        var sub = items!;
+                        int index2 = sub.Count + 1;
+                        if (index2 < sub.Count)
+                        {
+                            var r = FindDown(sub[sub.Count + 1]);
+                            if (r) return true;
+                        }
+                        else
+                        {
+                            var r = FindDown(p1, false);
+                            if (r) return true;
+                        }
+                    }
+                    else
+                    {
+                        var sub = p1.PARENTITEM.items!;
+                        int index2 = sub.Count + 1;
+                        if (index2 < sub.Count)
+                        {
+                            var r = FindDown(sub[index2]);
+                            if (r) return true;
+                        }
+                        else
+                        {
+                            var r = FindDown(p1, false);
+                            if (r) return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        bool FindLeft(TreeItem item)
+        {
+            if (item.ICanExpand && item.Expand) item.Expand = false;
+            return true;
+        }
+        bool FindRight(TreeItem item)
+        {
+            if (item.ICanExpand && !item.Expand) item.Expand = true;
+            return true;
+        }
+
+        #endregion
+
         #region 方法
 
         /// <summary>
         /// 选择指定项
         /// </summary>
-        public bool Select(TreeItem item) => Select(items, item);
+        public bool Select(TreeItem item, bool focus = true) => Select(items, item, focus);
 
-        bool Select(TreeItemCollection? items, TreeItem item)
+        bool Select(TreeItemCollection? items, TreeItem item, bool focus)
         {
             if (items == null || items.Count == 0) return false;
             foreach (var it in items)
@@ -998,9 +1155,10 @@ namespace AntdUI
                     selectItem = item;
                     it.Select = true;
                     OnSelectChanged(it, TreeCType.None, new MouseEventArgs(MouseButtons.None, 0, 0, 0, 0));
+                    if (focus) Focus(it);
                     return true;
                 }
-                if (Select(it.items, item)) return true;
+                if (Select(it.items, item, focus)) return true;
             }
             return false;
         }
@@ -1639,6 +1797,14 @@ namespace AntdUI
             }
         }
 
+        public void CheckedStrictly(bool value = true, bool handsub = true)
+        {
+            if (PARENT == null) return;
+            Checked = value;
+            if (handsub) PARENT.SetCheck(this, value);
+            PARENT.SetCheckStrictly(PARENTITEM);
+        }
+
         #endregion
 
         #region 样式
@@ -2061,6 +2227,42 @@ namespace AntdUI
         }
 
         #endregion
+
+        public string FullPath(string PathSeparator = "/")
+        {
+            var list = new List<string?>(Depth + 1) { Text };
+            var parent = PARENTITEM;
+            while (parent != null)
+            {
+                list.Insert(0, parent.Text);
+                parent = parent.PARENTITEM;
+            }
+            return string.Join(PathSeparator, list);
+        }
+
+        public string FullID(string PathSeparator = "/")
+        {
+            var list = new List<string?>(Depth + 1) { ID };
+            var parent = PARENTITEM;
+            while (parent != null)
+            {
+                list.Insert(0, parent.ID);
+                parent = parent.PARENTITEM;
+            }
+            return string.Join(PathSeparator, list);
+        }
+
+        public string FullName(string PathSeparator = "/")
+        {
+            var list = new List<string?>(Depth + 1) { Name };
+            var parent = PARENTITEM;
+            while (parent != null)
+            {
+                list.Insert(0, parent.Name);
+                parent = parent.PARENTITEM;
+            }
+            return string.Join(PathSeparator, list);
+        }
 
         public override string? ToString() => Text;
     }

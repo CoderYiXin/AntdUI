@@ -112,10 +112,10 @@ namespace AntdUI
         }
 
         /// <summary>
-        /// 焦点标识块
+        /// 焦点模式
         /// </summary>
-        [Description("绘制焦点标识块"), Category("外观"), DefaultValue(false)]
-        public bool FocusedMark { get; set; }
+        [Description("焦点模式"), Category("外观"), DefaultValue(TFocusMode.None)]
+        public TFocusMode FocusMode { get; set; } = TFocusMode.None;
 
         /// <summary>
         /// 色彩模式
@@ -139,12 +139,59 @@ namespace AntdUI
             {
                 if (_gap == value) return;
                 _gap = value;
-                if (IsHandleCreated)
-                {
-                    ChangeList();
-                    Invalidate();
-                }
+                ChangeList(true);
                 OnPropertyChanged(nameof(Gap));
+            }
+        }
+
+        int? icongap;
+        /// <summary>
+        /// 图标与文字间距比例
+        /// </summary>
+        [Description("图标与文字间距比例"), Category("外观"), DefaultValue(null)]
+        public int? IconGap
+        {
+            get => icongap;
+            set
+            {
+                if (icongap == value) return;
+                icongap = value;
+                ChangeList(true);
+                OnPropertyChanged(nameof(IconGap));
+            }
+        }
+
+        int? _itemMargin;
+        /// <summary>
+        /// 菜单项外间距
+        /// </summary>
+        [Description("菜单项外间距"), Category("外观"), DefaultValue(null)]
+        public int? itemMargin
+        {
+            get => _itemMargin;
+            set
+            {
+                if (_itemMargin == value) return;
+                _itemMargin = value;
+                ChangeList(true);
+                OnPropertyChanged(nameof(itemMargin));
+            }
+        }
+
+        int? _inlineIndent;
+        /// <summary>
+        /// 缩进宽度
+        /// </summary>
+        [Description("缩进宽度"), Category("外观"), DefaultValue(null)]
+        public int? InlineIndent
+        {
+            get => _inlineIndent;
+            set
+            {
+                if (_inlineIndent == value) return;
+                _inlineIndent = value;
+                ChangeList(true);
+                OnPropertyChanged(nameof(InlineIndent));
             }
         }
 
@@ -160,12 +207,25 @@ namespace AntdUI
             {
                 if (iconratio == value) return;
                 iconratio = value;
-                if (IsHandleCreated)
-                {
-                    ChangeList();
-                    Invalidate();
-                }
+                ChangeList(true);
                 OnPropertyChanged(nameof(IconRatio));
+            }
+        }
+
+        float? arrowRatio;
+        /// <summary>
+        /// 箭头比例
+        /// </summary>
+        [Description("箭头比例"), Category("外观"), DefaultValue(null)]
+        public float? ArrowRatio
+        {
+            get => arrowRatio;
+            set
+            {
+                if (arrowRatio == value) return;
+                arrowRatio = value;
+                ChangeList(true);
+                OnPropertyChanged(nameof(ArrowRatio));
             }
         }
 
@@ -181,11 +241,7 @@ namespace AntdUI
             {
                 if (mode == value) return;
                 mode = value;
-                if (IsHandleCreated)
-                {
-                    ChangeList();
-                    Invalidate();
-                }
+                ChangeList(true);
                 OnPropertyChanged(nameof(Mode));
             }
         }
@@ -208,11 +264,7 @@ namespace AntdUI
             {
                 if (indent == value) return;
                 indent = value;
-                if (IsHandleCreated)
-                {
-                    ChangeList();
-                    Invalidate();
-                }
+                ChangeList(true);
                 OnPropertyChanged(nameof(Indent));
             }
         }
@@ -275,11 +327,7 @@ namespace AntdUI
             {
                 if (collapsed == value) return;
                 collapsed = value;
-                if (IsHandleCreated)
-                {
-                    ChangeList();
-                    Invalidate();
-                }
+                ChangeList(true);
                 OnPropertyChanged(nameof(Collapsed));
             }
         }
@@ -299,6 +347,21 @@ namespace AntdUI
 
         #region 集合操作
 
+        MenuItem? selectItem, focusItem;
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        public MenuItem? SelectItem
+        {
+            get => selectItem;
+            private set
+            {
+                focusItem = null;
+                if (selectItem == value) return;
+                selectItem = value;
+                if (value == null) return;
+                SelectChanged?.Invoke(this, new MenuSelectEventArgs(value));
+            }
+        }
+
         public void SelectIndex(int i1, bool focus = true)
         {
             if (items == null || items.Count == 0) return;
@@ -309,10 +372,12 @@ namespace AntdUI
             }
             var it1 = items[i1];
             it1.Select = true;
-            SelectChanged?.Invoke(this, new MenuSelectEventArgs(it1));
-            if (focus && ScrollBar.ShowY) ScrollBar.ValueY = it1.rect.Y;
+            SelectItem = it1;
+            ItemClick?.Invoke(this, new MenuItemEventArgs(it1, new MouseEventArgs(MouseButtons.None, 0, 0, 0, 0)));
+            if (focus) Focus(it1);
             Invalidate();
         }
+
         public void SelectIndex(int i1, int i2, bool focus = true)
         {
             if (items == null || items.Count == 0) return;
@@ -328,10 +393,12 @@ namespace AntdUI
             }
             var it2 = it1.Sub[i2];
             it1.Select = it2.Select = true;
-            SelectChanged?.Invoke(this, new MenuSelectEventArgs(it2));
-            if (focus && ScrollBar.ShowY) ScrollBar.ValueY = it2.rect.Y;
+            SelectItem = it2;
+            ItemClick?.Invoke(this, new MenuItemEventArgs(it2, new MouseEventArgs(MouseButtons.None, 0, 0, 0, 0)));
+            if (focus) Focus(it2);
             Invalidate();
         }
+
         public void SelectIndex(int i1, int i2, int i3, bool focus = true)
         {
             if (items == null || items.Count == 0) return;
@@ -354,8 +421,9 @@ namespace AntdUI
             }
             var it3 = it2.Sub[i3];
             it1.Select = it2.Select = it3.Select = true;
-            SelectChanged?.Invoke(this, new MenuSelectEventArgs(it3));
-            if (focus && ScrollBar.ShowY) ScrollBar.ValueY = it3.rect.Y;
+            SelectItem = it3;
+            ItemClick?.Invoke(this, new MenuItemEventArgs(it3, new MouseEventArgs(MouseButtons.None, 0, 0, 0, 0)));
+            if (focus) Focus(it3);
             Invalidate();
         }
 
@@ -386,11 +454,7 @@ namespace AntdUI
             {
                 if (pauseLayout == value) return;
                 pauseLayout = value;
-                if (!value)
-                {
-                    ChangeList();
-                    Invalidate();
-                }
+                if (!value) ChangeList(true);
                 OnPropertyChanged(nameof(PauseLayout));
             }
         }
@@ -412,6 +476,7 @@ namespace AntdUI
             var item = GetSelectItem(out var sub);
             if (item != null)
             {
+                selectItem = item;
                 foreach (var it in sub) it.Select = true;
             }
         }
@@ -466,7 +531,7 @@ namespace AntdUI
 
         protected override void OnSizeChanged(EventArgs e)
         {
-            if (IsHandleCreated) ChangeList();
+            ChangeList();
             base.OnSizeChanged(e);
         }
 
@@ -483,48 +548,87 @@ namespace AntdUI
 
         bool scroll_show = false, hover_r = false;
         Rectangle rect_r, rect_r_ico;
-        internal void ChangeList()
+        bool CanLayout()
         {
-            var _rect = ClientRectangle;
-            if (_rect.Width == 0 || _rect.Height == 0 || pauseLayout || items == null || items.Count == 0) return;
-            var rect = _rect.PaddingRect(Padding);
-            int x = 0, y = 0;
-            int icon_count = 0;
-            Helper.GDI(g =>
+            if (IsHandleCreated)
             {
-                var size = g.MeasureString(Config.NullText, Font);
-                int icon_size = (int)Math.Ceiling(size.Height * iconratio), gap = icon_size / 2, gapI = gap / 2, height = size.Height + gap * 2;
-                if (mode == TMenuMode.Horizontal)
-                {
-                    int sp = _gap.HasValue ? (int)(_gap.Value * Config.Dpi) : 0;
-                    ChangeListHorizontal(rect, g, items, ref x, icon_size, gap, gapI, sp);
-                    scroll_show = x > rect.Width;
-                    if (scroll_show)
-                    {
-                        rect_r = new Rectangle(rect.Right - rect.Height, rect.Y, rect.Height, rect.Height);
-                        int ico_size = (int)(rect_r.Height * .6F), ico_xy = (rect_r.Height - ico_size) / 2;
-                        rect_r_ico = new Rectangle(rect_r.X + ico_xy, rect_r.Y + ico_xy, ico_size, ico_size);
-                    }
-                }
-                else
-                {
-                    int sp = _gap.HasValue ? (int)(_gap.Value * Config.Dpi) : gapI;
-                    scroll_show = false;
-                    collapseWidth = icon_size * 2 + gap + gapI + Padding.Horizontal;
-                    collapsedWidth = ChangeList(rect, g, null, items, ref y, ref icon_count, height, icon_size, gap, sp, 0) + Padding.Horizontal;
-                    if (AutoCollapse)
-                    {
-                        if (icon_count > 0) collapsed = collapsedWidth >= _rect.Width;
-                        else collapsed = false;
-                    }
-                    if (collapsed) ChangeUTitle(items);
-                }
-            });
-            ScrollBar.SetVrSize(y + Padding.Vertical);
-            ScrollBar.SizeChange(_rect);
+                var rect = ClientRectangle;
+                if (pauseLayout || items == null || items.Count == 0 || rect.Width == 0 || rect.Height == 0) return false;
+                return true;
+            }
+            return false;
         }
 
-        int ChangeList(Rectangle rect, Canvas g, MenuItem? Parent, MenuItemCollection items, ref int y, ref int icon_count, int height, int icon_size, int gap, int sp, int depth)
+        internal void ChangeList(bool print = false)
+        {
+            if (CanLayout())
+            {
+                var _rect = ClientRectangle;
+                var rect = _rect.PaddingRect(Padding);
+                int x = 0, y = 0, icon_count = 0;
+                Helper.GDI(g =>
+                {
+                    var size = g.MeasureString(Config.NullText, Font);
+                    int icon_size = (int)(size.Height * iconratio);
+                    int gap = (_gap.HasValue ? (int)(_gap.Value * Config.Dpi) : (int)(size.Height * .8F)), gap2 = gap * 2, sp = (_itemMargin.HasValue ? (int)(_itemMargin.Value * Config.Dpi) : (int)(size.Height * .2F)), sp2 = sp * 2, height = size.Height + gap2;
+                    int inlineIndent = (_inlineIndent.HasValue ? (int)(_inlineIndent.Value * Config.Dpi) : (int)(size.Height * 1.2F)), iconsp = (icongap.HasValue ? (int)(icongap.Value * Config.Dpi) : size.Height / 2);
+                    if (mode == TMenuMode.Horizontal)
+                    {
+                        ChangeListHorizontal(rect, g, items!, ref x, icon_size, gap, gap2, sp, sp2, iconsp);
+                        scroll_show = x > rect.Width;
+                        if (scroll_show)
+                        {
+                            rect_r = new Rectangle(rect.Right - rect.Height, rect.Y, rect.Height, rect.Height);
+                            int ico_size = (int)(rect_r.Height * .6F), ico_xy = (rect_r.Height - ico_size) / 2;
+                            rect_r_ico = new Rectangle(rect_r.X + ico_xy, rect_r.Y + ico_xy, ico_size, ico_size);
+                        }
+                    }
+                    else
+                    {
+                        scroll_show = false;
+                        collapseWidth = icon_size + gap2 + Padding.Horizontal;
+                        if (mode == TMenuMode.InlineNoText)
+                        {
+                            int arrow_size = arrowRatio.HasValue ? (int)(size.Height * arrowRatio.Value) : (int)(icon_size * 0.85F);
+                            collapsedWidth = ChangeListInlineNoText(rect, g, null, items!, ref y, height, icon_size, arrow_size, gap, gap2, sp, sp2, iconsp) + Padding.Horizontal;
+                        }
+                        else
+                        {
+                            int arrow_size = arrowRatio.HasValue ? (int)(size.Height * arrowRatio.Value) : icon_size;
+                            int yr = ChangeListY(rect, items!, ref icon_count, height, sp) + Padding.Vertical;
+                            int scx = yr > _rect.Height ? ScrollBar.SIZE : 0;
+                            collapsedWidth = ChangeList(rect, g, null, items!, ref y, height, icon_size, arrow_size, gap, gap2, sp, sp2, inlineIndent, iconsp, scx, 0) + Padding.Horizontal;
+                        }
+                        if (AutoCollapse)
+                        {
+                            if (icon_count > 0) collapsed = collapsedWidth >= _rect.Width;
+                            else collapsed = false;
+                        }
+                        if (collapsed) ChangeUTitle(items!);
+                    }
+                });
+                ScrollBar.SetVrSize(y + Padding.Vertical);
+                ScrollBar.SizeChange(_rect);
+            }
+            if (print) Invalidate();
+        }
+
+        int ChangeListY(Rectangle rect, MenuItemCollection items, ref int icon_count, int height, int sp)
+        {
+            int y = 0;
+            foreach (var it in items)
+            {
+                if (it.HasIcon) icon_count++;
+                if (it.Visible)
+                {
+                    y += height + sp;
+                    if ((mode == TMenuMode.Inline || mode == TMenuMode.InlineNoText) && it.Expand) y += ChangeListY(rect, it.Sub, ref icon_count, height, sp);
+                }
+            }
+            return y;
+        }
+
+        int ChangeList(Rectangle rect, Canvas g, MenuItem? Parent, MenuItemCollection items, ref int y, int height, int icon_size, int arrow_size, int gap, int gap2, int sp, int sp2, int inlineIndent, int iconsp, int scx, int depth)
         {
             int collapsedWidth = 0, i = 0;
             foreach (var it in items)
@@ -533,20 +637,25 @@ namespace AntdUI
                 i++;
                 it.PARENT = this;
                 it.PARENTITEM = Parent;
-                if (it.HasIcon) icon_count++;
-                it.SetRect(mode == TMenuMode.InlineNoText ? 0 : depth, Indent, mode, new Rectangle(rect.X, rect.Y + y, rect.Width, height), icon_size, gap);
+                int uw = it.SetRect(this, depth, Indent, new Rectangle(rect.X, rect.Y + y, rect.Width, height), icon_size, arrow_size, gap, gap2, sp, sp2, inlineIndent, iconsp, scx, out int exr);
                 if (it.Visible)
                 {
-                    int size = g.MeasureText(it.Text, it.Font ?? Font).Width + gap * 4 + icon_size + it.arr_rect.Width;
+                    int size = g.MeasureText(it.Text, it.Font ?? Font).Width + uw + gap2 + scx + exr;
                     if (size > collapsedWidth) collapsedWidth = size;
                     y += height + sp;
-                    if ((mode == TMenuMode.Inline || mode == TMenuMode.InlineNoText) && it.CanExpand)
+                    if (mode == TMenuMode.Inline && it.CanExpand)
                     {
-                        if (!collapsed)
+                        if (collapsed)
+                        {
+                            int oldy = y;
+                            int size2 = ChangeList(rect, g, it, it.Sub, ref y, height, icon_size, arrow_size, gap, gap2, sp, sp2, inlineIndent, iconsp, scx, depth + 1);
+                            if (size2 > collapsedWidth) collapsedWidth = size2;
+                            y = oldy;
+                        }
+                        else
                         {
                             int y_item = y;
-
-                            int size2 = ChangeList(rect, g, it, it.Sub, ref y, ref icon_count, height, icon_size, gap, sp, depth + 1);
+                            int size2 = ChangeList(rect, g, it, it.Sub, ref y, height, icon_size, arrow_size, gap, gap2, sp, sp2, inlineIndent, iconsp, scx, depth + 1);
                             if (size2 > collapsedWidth) collapsedWidth = size2;
 
                             it.SubY = rect.Y + y_item - sp / 2;
@@ -559,19 +668,58 @@ namespace AntdUI
                             }
                             else if (!it.Expand) y = y_item;
                         }
-                        else
+                    }
+                }
+            }
+            return collapsedWidth;
+        }
+        int ChangeListInlineNoText(Rectangle rect, Canvas g, MenuItem? Parent, MenuItemCollection items, ref int y, int height, int icon_size, int arrow_size, int gap, int gap2, int sp, int sp2, int iconsp)
+        {
+            int collapsedWidth = 0, i = 0;
+            foreach (var it in items)
+            {
+                it.Index = i;
+                i++;
+                it.PARENT = this;
+                it.PARENTITEM = Parent;
+                int uw = it.SetRectInlineNoText(new Rectangle(rect.X, rect.Y + y, rect.Width, height), icon_size, arrow_size, gap, gap2, sp, sp2, iconsp);
+                if (it.Visible)
+                {
+                    int size = g.MeasureText(it.Text, it.Font ?? Font).Width + uw + gap2;
+                    if (size > collapsedWidth) collapsedWidth = size;
+                    y += height + sp;
+                    if (it.CanExpand)
+                    {
+                        if (collapsed)
                         {
                             int oldy = y;
-                            int size2 = ChangeList(rect, g, it, it.Sub, ref y, ref icon_count, height, icon_size, gap, sp, depth + 1);
+                            int size2 = ChangeListInlineNoText(rect, g, it, it.Sub, ref y, height, icon_size, arrow_size, gap, gap2, sp, sp2, iconsp);
                             if (size2 > collapsedWidth) collapsedWidth = size2;
                             y = oldy;
+                        }
+                        else
+                        {
+                            int y_item = y;
+
+                            int size2 = ChangeListInlineNoText(rect, g, it, it.Sub, ref y, height, icon_size, arrow_size, gap, gap2, sp, sp2, iconsp);
+                            if (size2 > collapsedWidth) collapsedWidth = size2;
+
+                            it.SubY = rect.Y + y_item - sp / 2;
+                            it.SubHeight = y - y_item;
+
+                            if ((it.Expand || it.ExpandThread) && it.ExpandProg > 0)
+                            {
+                                it.ExpandHeight = y - y_item;
+                                y = y_item + (int)Math.Ceiling(it.ExpandHeight * it.ExpandProg);
+                            }
+                            else if (!it.Expand) y = y_item;
                         }
                     }
                 }
             }
             return collapsedWidth;
         }
-        void ChangeListHorizontal(Rectangle rect, Canvas g, MenuItemCollection items, ref int x, int icon_size, int gap, int gapI, int sp)
+        void ChangeListHorizontal(Rectangle rect, Canvas g, MenuItemCollection items, ref int x, int icon_size, int gap, int gap2, int sp, int sp2, int iconsp)
         {
             int i = 0;
             foreach (var it in items)
@@ -579,11 +727,24 @@ namespace AntdUI
                 it.Index = i;
                 i++;
                 it.PARENT = this;
-                int size;
-                if (it.HasIcon) size = g.MeasureText(it.Text, it.Font ?? Font).Width + gap * 3 + icon_size;
-                else size = g.MeasureText(it.Text, it.Font ?? Font).Width + gap * 2;
-                it.SetRectNoArr(0, new Rectangle(rect.X + x, rect.Y, size, rect.Height), icon_size, gap);
-                if (it.Visible) x += size + sp;
+                int width = g.MeasureText(it.Text, it.Font ?? Font).Width;
+                if (it.HasIcon)
+                {
+                    int tmp = icon_size + iconsp;
+                    int usew = gap2 + tmp, y = (rect.Height - icon_size) / 2;
+                    int size = width + gap2 + tmp;
+                    var _rect = new Rectangle(rect.X + x, rect.Y, size, rect.Height);
+                    it.ico_rect = new Rectangle(_rect.X + gap, _rect.Y + y, icon_size, icon_size);
+                    it.SetRectNoArr(_rect, new Rectangle(_rect.X + gap + tmp, _rect.Y, _rect.Width - usew, _rect.Height));
+                    if (it.Visible) x += size + sp;
+                }
+                else
+                {
+                    int size = width + gap2;
+                    var _rect = new Rectangle(rect.X + x, rect.Y, size, rect.Height);
+                    it.SetRectNoArr(_rect, new Rectangle(_rect.X + gap, _rect.Y, _rect.Width - gap2, _rect.Height));
+                    if (it.Visible) x += size + sp;
+                }
             }
         }
 
@@ -591,8 +752,7 @@ namespace AntdUI
         {
             foreach (var it in items)
             {
-                var rect = it.Rect;
-                it.ico_rect = new Rectangle(rect.X + (rect.Width - it.ico_rect.Width) / 2, it.ico_rect.Y, it.ico_rect.Width, it.ico_rect.Height);
+                it.ico_rect = new Rectangle(it.rect.X + (it.rect.Width - it.ico_rect.Width) / 2, it.ico_rect.Y, it.ico_rect.Width, it.ico_rect.Height);
                 if (it.Visible && it.CanExpand) ChangeUTitle(it.Sub);
             }
         }
@@ -758,7 +918,7 @@ namespace AntdUI
                         else
                         {
                             PaintBack(g, back_active, it.rect, radius);
-                            PaintTextIcon(g, it, fore_active);
+                            PaintTextIcon(g, it, fore_active, radius);
                         }
                     }
                     else
@@ -784,7 +944,7 @@ namespace AntdUI
                         else
                         {
                             PaintBack(g, back_active, it.rect, radius);
-                            PaintTextIcon(g, it, fore_active);
+                            PaintTextIcon(g, it, fore_active, radius);
                         }
                     }
                     else
@@ -794,6 +954,8 @@ namespace AntdUI
                         PaintTextIconExpand(g, it, fore);
                     }
                 }
+                PaintCustomButton(g, it, fore, fore_active);
+                if (focusItem == it) PaintFocus(g, it, fore, radius);
             }
             else
             {
@@ -802,7 +964,7 @@ namespace AntdUI
                     if (it.CanExpand)
                     {
                         if (mode == TMenuMode.Horizontal || mode == TMenuMode.Vertical) PaintBack(g, back_active, it.rect, radius);
-                        using (var pen = new Pen(fore_active, 2F))
+                        using (var pen = new Pen(fore_active, Config.Dpi * 2))
                         {
                             pen.StartCap = pen.EndCap = System.Drawing.Drawing2D.LineCap.Round;
                             g.DrawLines(pen, it.arr_rect.TriangleLines(it.ArrowProg, .4F));
@@ -812,30 +974,43 @@ namespace AntdUI
                 }
                 else if (it.CanExpand)
                 {
-                    using (var pen = new Pen(fore_enabled, 2F))
+                    using (var pen = new Pen(fore_enabled, Config.Dpi * 2))
                     {
                         pen.StartCap = pen.EndCap = System.Drawing.Drawing2D.LineCap.Round;
                         g.DrawLines(pen, it.arr_rect.TriangleLines(it.ArrowProg, .4F));
                     }
                 }
-                PaintTextIcon(g, it, fore_enabled);
+                PaintTextIcon(g, it, fore_enabled, radius);
             }
         }
 
         readonly StringFormat SL = Helper.SF_ALL(lr: StringAlignment.Near);
-        void PaintTextIcon(Canvas g, MenuItem it, Color fore)
+        void PaintTextIcon(Canvas g, MenuItem it, Color fore, float radius)
         {
             using (var brush = new SolidBrush(fore))
             {
                 if (mode != TMenuMode.InlineNoText) g.DrawText(it.Text, it.Font ?? Font, brush, it.txt_rect, SL);
-                if (FocusedMark) //增加焦点块
-                {
-                    int fh = it.rect.Height - (it.rect.Height / 3);
-                    Rectangle rectFocused = new Rectangle(0, it.rect.Top + (it.rect.Height - fh) / 2, 6, fh);
-                    g.Fill(brush, rectFocused);
-                }
+                if (focusItem == null) PaintFocus(g, it, fore, radius);
             }
             PaintIcon(g, it, fore);
+        }
+        void PaintFocus(Canvas g, MenuItem it, Color fore, float radius)
+        {
+            switch (FocusMode)
+            {
+                case TFocusMode.Line:
+                    int fh = (int)(it.rect.Height * 0.6F), fw = (int)(fh * 0.12F);
+                    g.Fill(fore, new Rectangle(it.rect.X, it.rect.Y + (it.rect.Height - fh) / 2, fw, fh));
+                    break;
+                case TFocusMode.Border:
+                    float wave = 2 * Config.Dpi, wave2 = wave * 2, r = radius + wave;
+                    var rect_focus = new RectangleF(it.rect.X - wave, it.rect.Y - wave, it.rect.Width + wave2, it.rect.Height + wave2);
+                    using (var path_focus = rect_focus.RoundPath(r))
+                    {
+                        g.Draw(Colour.PrimaryBorder.Get("Menu", ColorScheme), wave, path_focus);
+                    }
+                    break;
+            }
         }
         void PaintTextIconExpand(Canvas g, MenuItem it, Color fore)
         {
@@ -843,7 +1018,7 @@ namespace AntdUI
             {
                 if (mode == TMenuMode.Inline || mode == TMenuMode.InlineNoText)
                 {
-                    using (var pen = new Pen(fore, 2F))
+                    using (var pen = new Pen(fore, Config.Dpi * 2))
                     {
                         pen.StartCap = pen.EndCap = System.Drawing.Drawing2D.LineCap.Round;
                         g.DrawLines(pen, it.arr_rect.TriangleLines(it.ArrowProg, .4F));
@@ -851,7 +1026,7 @@ namespace AntdUI
                 }
                 else if (mode == TMenuMode.Vertical)
                 {
-                    using (var pen = new Pen(fore, 2F))
+                    using (var pen = new Pen(fore, Config.Dpi * 2))
                     {
                         pen.StartCap = pen.EndCap = System.Drawing.Drawing2D.LineCap.Round;
                         g.DrawLines(pen, TAlignMini.Right.TriangleLines(it.arr_rect, .4F));
@@ -885,7 +1060,26 @@ namespace AntdUI
             if (it.Icon != null) g.Image(it.Icon, it.ico_rect);
             if (it.IconSvg != null) g.GetImgExtend(it.IconSvg, it.ico_rect, fore);
         }
-
+        void PaintCustomButton(Canvas g, MenuItem it, Color fore, Color fore_active)
+        {
+            if (it.Button == null) return;
+            foreach (var item in it.Button)
+            {
+                if (item.AnimationHover)
+                {
+                    PaintCustomButtonIcon(g, item, fore);
+                    PaintCustomButtonIcon(g, item, Helper.ToColorN(it.AnimationHoverValue, fore_active));
+                }
+                else if (item.Hover) PaintCustomButtonIcon(g, item, fore_active);
+                else PaintCustomButtonIcon(g, item, fore);
+                item.PaintBadge(Font, item.rect, g, ColorScheme);
+            }
+        }
+        void PaintCustomButtonIcon(Canvas g, MenuButton it, Color fore)
+        {
+            if (it.Icon != null) g.Image(it.Icon, it.rect);
+            if (it.IconSvg != null) g.GetImgExtend(it.IconSvg, it.rect, fore);
+        }
         void PaintBack(Canvas g, Color color, Rectangle rect, float radius)
         {
             if (Round || radius > 0)
@@ -903,9 +1097,14 @@ namespace AntdUI
         #region 鼠标
 
         MenuItem? MDown;
+        int mClicks = 0;
         protected override void OnMouseDown(MouseEventArgs e)
         {
             base.OnMouseDown(e);
+            mClicks = e.Clicks;
+            if (FocusMode != TFocusMode.None) Focus();
+            CloseTip();
+            CloseDropDown();
             if (e.Button == MouseButtons.Right && !MouseRightCtrl) return;
             if (ScrollBar.MouseDown(e.X, e.Y))
             {
@@ -921,6 +1120,7 @@ namespace AntdUI
                 }
             }
         }
+
         protected override void OnMouseUp(MouseEventArgs e)
         {
             base.OnMouseUp(e);
@@ -931,7 +1131,7 @@ namespace AntdUI
                 foreach (var it in items)
                 {
                     var list = new List<MenuItem> { it };
-                    if (IMouseUp(items, it, list, e.X, e.Y, MDown)) return;
+                    if (IMouseUp(items, it, list, e.X, e.Y, MDown, e)) return;
                 }
             }
         }
@@ -957,43 +1157,43 @@ namespace AntdUI
             return false;
         }
 
-        bool IMouseUp(MenuItemCollection items, MenuItem item, List<MenuItem> list, int x, int y, MenuItem MDown)
+        bool IMouseUp(MenuItemCollection items, MenuItem item, List<MenuItem> list, int x, int y, MenuItem MDown, MouseEventArgs e)
         {
             if (item.Visible)
             {
                 bool can = item.CanExpand;
                 if (MDown == item)
                 {
-                    if (item.Enabled && item.Contains(x, y, 0, ScrollBar.Value, out _))
+                    if (item.Enabled && item.Contains(x, y, 0, ScrollBar.Value, out var btn))
                     {
-                        if (IsCanChang(item))
+                        if (btn == null)
                         {
-                            if (can)
+                            if (IsCanChang(item))
                             {
-                                if ((mode == TMenuMode.Horizontal || mode == TMenuMode.Vertical) && Trigger == Trigger.Click && item.items != null && item.items.Count > 0)
+                                if (can)
                                 {
-                                    if (subForm == null)
+                                    if ((mode == TMenuMode.Horizontal || mode == TMenuMode.Vertical) && Trigger == Trigger.Click && item.items != null && item.items.Count > 0)
                                     {
-                                        select_x = 0;
-                                        subForm = new LayeredFormMenuDown(this, radius, item.Rect, item.items);
-                                        subForm.Show(this);
+                                        if (subForm == null) OpenDropDown(item);
+                                        else CloseDropDown();
                                     }
-                                    else { subForm.IClose(); subForm = null; }
+                                    else item.Expand = !item.Expand;
                                 }
-                                else item.Expand = !item.Expand;
-                            }
-                            else
-                            {
-                                IUSelect(items);
-                                if (list.Count > 1)
+                                else
                                 {
-                                    foreach (var it in list) it.Select = true;
+                                    IUSelect(items);
+                                    if (list.Count > 1)
+                                    {
+                                        foreach (var it in list) it.Select = true;
+                                    }
+                                    item.Select = true;
+                                    SelectItem = item;
+                                    ItemClick?.Invoke(this, new MenuItemEventArgs(item, e, mClicks));
+                                    Invalidate();
                                 }
-                                item.Select = true;
-                                SelectChanged?.Invoke(this, new MenuSelectEventArgs(item));
-                                Invalidate();
                             }
                         }
+                        else CustomButtonClick?.Invoke(this, new MenuCustomButtonEventArgs(btn, item));
                     }
                     return true;
                 }
@@ -1004,178 +1204,187 @@ namespace AntdUI
                         var list_ = new List<MenuItem>(list.Count + 1);
                         list_.AddRange(list);
                         list_.Add(sub);
-                        if (IMouseUp(items, sub, list_, x, y, MDown)) return true;
+                        if (IMouseUp(items, sub, list_, x, y, MDown, e)) return true;
                     }
                 }
             }
             return false;
         }
 
-        int hoveindexold = -1;
         protected override void OnMouseMove(MouseEventArgs e)
         {
             base.OnMouseMove(e);
-            if (ScrollBar.MouseMove(e.X, e.Y))
+            if (ScrollBar.MouseMove(e.X, e.Y) && OnTouchMove(e.X, e.Y))
             {
-                if (OnTouchMove(e.X, e.Y))
+                if (items == null || items.Count == 0) return;
+                int count = 0, hand = 0;
+                if (scroll_show)
                 {
-                    if (items == null || items.Count == 0) return;
-                    int count = 0, hand = 0;
-                    if (scroll_show)
+                    if (rect_r.Contains(e.X, e.Y))
                     {
-                        if (rect_r.Contains(e.X, e.Y))
+                        if (!hover_r)
                         {
-                            if (!hover_r)
-                            {
-                                hover_r = true;
-                                Invalidate();
-                                tooltipForm?.Close();
-                                tooltipForm = null;
-                                subForm?.Close();
-                                subForm = null;
-                                var list = new List<MenuItem>(items.Count);
-                                foreach (var it in items)
-                                {
-                                    if (it.Rect.X > (rect_r.X - it.Rect.Width)) list.Add(it);
-                                }
-                                subForm = new LayeredFormMenuDown(this, radius, rect_r, list);
-                                subForm.Show(this);
-                            }
-                            foreach (var it in items) it.Hover = false;
-                            SetCursor(true);
-                            return;
+                            hover_r = true;
+                            Invalidate();
                         }
-                        else
-                        {
-                            if (hover_r) count++;
-                            hover_r = false;
-                        }
-                    }
-                    if (collapsed)
-                    {
-                        int i = 0, hoveindex = -1;
-                        foreach (var it in items)
-                        {
-                            if (it.show)
-                            {
-                                if (it.Contains(e.X, e.Y, 0, ScrollBar.Value, out var change))
-                                {
-                                    hoveindex = i;
-                                    hand++;
-                                }
-                                if (change) count++;
-                            }
-                            i++;
-                        }
-                        if (hoveindex != hoveindexold)
-                        {
-                            hoveindexold = hoveindex;
-
-                            subForm?.Close();
-                            subForm = null;
-                            tooltipForm?.Close();
-                            tooltipForm = null;
-                            if (hoveindex > -1)
-                            {
-                                var it = items[hoveindex];
-                                if (it == null) return;
-                                if (it.items != null && it.items.Count > 0)
-                                {
-                                    select_x = 0;
-                                    subForm = new LayeredFormMenuDown(this, radius, it.Rect, it.items);
-                                    subForm.Show(this);
-                                }
-                                else if (it.Text != null) ShowTooltip(it, it.Rect);
-                            }
-                        }
-                    }
-                    else if (mode == TMenuMode.Inline || mode == TMenuMode.InlineNoText)
-                    {
-                        foreach (var it in items) IMouseMove(it, e.X, e.Y, ref count, ref hand);
+                        foreach (var it in items) it.Hover = false;
+                        SetCursor(true);
+                        return;
                     }
                     else
                     {
-                        int i = 0, hoveindex = -1;
-                        foreach (var it in items)
+                        if (hover_r) count++;
+                        hover_r = false;
+                    }
+                }
+                if (collapsed)
+                {
+                    foreach (var it in items)
+                    {
+                        if (it.show) it.Contains(e.X, e.Y, 0, ScrollBar.Value, ref hand, ref count);
+                    }
+                }
+                else if (mode == TMenuMode.Inline)
+                {
+                    foreach (var it in items) IMouseMove(it, e.X, e.Y, ref count, ref hand);
+                }
+                else if (mode == TMenuMode.InlineNoText)
+                {
+                    foreach (var it in items)
+                    {
+                        if (it.show)
                         {
-                            if (it.show)
-                            {
-                                if (it.Contains(e.X, e.Y, 0, ScrollBar.Value, out var change))
-                                {
-                                    hoveindex = i;
-                                    hand++;
-                                }
-                                if (change) count++;
-                            }
-                            i++;
-                        }
-                        if (hoveindex != hoveindexold)
-                        {
-                            hoveindexold = hoveindex;
-
-                            subForm?.Close();
-                            subForm = null;
-                            tooltipForm?.Close();
-                            tooltipForm = null;
-                            if (hoveindex > -1)
-                            {
-                                var it = items[hoveindex];
-                                if (it == null) return;
-                                if (Trigger == Trigger.Hover && it.items != null && it.items.Count > 0)
-                                {
-                                    select_x = 0;
-                                    subForm = new LayeredFormMenuDown(this, radius, it.Rect, it.items);
-                                    subForm.Show(this);
-                                }
-                            }
+                            it.Contains(e.X, e.Y, 0, ScrollBar.Value, ref hand, ref count);
+                            if (it.items != null && it.items.Count > 0) foreach (var sub in it.items) IMouseMove(sub, e.X, e.Y, ref count, ref hand);
                         }
                     }
-                    SetCursor(hand > 0);
-                    if (count > 0) Invalidate();
                 }
+                else
+                {
+                    foreach (var it in items)
+                    {
+                        if (it.show) it.Contains(e.X, e.Y, 0, ScrollBar.Value, ref hand, ref count);
+                    }
+                }
+                SetCursor(hand > 0);
+                if (count > 0) Invalidate();
             }
             else ILeave();
-        }
-        void ShowTooltip(MenuItem it, Rectangle rect)
-        {
-            if (it.Text == null) return;
-            if (tooltipForm == null)
-            {
-                tooltipForm = new TooltipForm(this, rect, it.Text, TooltipConfig ?? new TooltipConfig
-                {
-                    Font = it.Font ?? Font,
-                    ArrowAlign = TAlign.Right,
-                });
-                tooltipForm.Show(this);
-            }
-            else tooltipForm.SetText(rect, it.Text);
         }
 
         void IMouseMove(MenuItem it, int x, int y, ref int count, ref int hand)
         {
             if (it.show)
             {
-                if (it.Contains(x, y, 0, ScrollBar.Value, out var change))
-                {
-                    if (mode == TMenuMode.InlineNoText)
-                    {
-                        var rect = new Rectangle(it.rect.X, it.rect.Y + (it.rect.Height / 2) - ScrollBar.Value, it.rect.Width, rect_r.Height);
-                        ShowTooltip(it, rect);
-                    }
-                    hand++;
-                }
-                if (change) count++;
+                if (it.Contains(x, y, 0, ScrollBar.Value, ref hand, ref count)) return;
                 if (it.items != null && it.items.Count > 0) foreach (var sub in it.items) IMouseMove(sub, x, y, ref count, ref hand);
             }
         }
+
+        #region 鼠标悬浮
+
+        protected override bool CanMouseMove { get; set; } = true;
+
+        protected override void OnMouseHover(int x, int y)
+        {
+            CloseTip();
+            if (x == -1 || y == -1) return;
+            CloseDropDown();
+            if (items == null || items.Count == 0) return;
+            if (scroll_show)
+            {
+                if (rect_r.Contains(x, y))
+                {
+                    var list = new List<MenuItem>(items.Count);
+                    foreach (var it in items)
+                    {
+                        if (it.rect.X > (rect_r.X - it.rect.Width)) list.Add(it);
+                    }
+                    subForm = new LayeredFormMenuDown(this, radius, rect_r, list);
+                    subForm.Show(this);
+                    return;
+                }
+            }
+            int sy = ScrollBar.Value;
+            if (collapsed)
+            {
+                foreach (var it in items)
+                {
+                    if (it.show && it.rect.Contains(x, y + sy))
+                    {
+                        if (OpenDropDown(it)) OpenTip(it, it.Rect);
+                        return;
+                    }
+                }
+            }
+            else if (mode == TMenuMode.Inline) return;
+            else if (mode == TMenuMode.InlineNoText)
+            {
+                foreach (var it in items) IMouseHover(it, x, y, sy);
+            }
+            else
+            {
+                foreach (var it in items)
+                {
+                    if (it.show && it.rect.Contains(x, y + sy))
+                    {
+                        if (Trigger == Trigger.Hover) OpenDropDown(it);
+                        return;
+                    }
+                }
+            }
+        }
+
+        void IMouseHover(MenuItem it, int x, int y, int sy)
+        {
+            if (it.show && it.rect.Contains(x, y + sy))
+            {
+                var rect = new Rectangle(it.rect.X, it.rect.Y + (it.rect.Height / 2) - ScrollBar.Value, it.rect.Width, rect_r.Height);
+                OpenTip(it, rect);
+                return;
+            }
+            if (it.items != null && it.items.Count > 0) foreach (var sub in it.items) IMouseHover(sub, x, y, sy);
+        }
+
+        #region Tip
+
+        TooltipForm? toolTip;
+
+        public void CloseTip()
+        {
+            toolTip?.IClose();
+            toolTip = null;
+        }
+
+        bool OpenTip(MenuItem it, Rectangle rect)
+        {
+            if (it.Text == null) return true;
+            if (toolTip == null)
+            {
+                toolTip = new TooltipForm(this, rect, it.Text, TooltipConfig ?? new TooltipConfig
+                {
+                    Font = it.Font ?? Font,
+                    ArrowAlign = TAlign.Right,
+                });
+                toolTip.Show(this);
+            }
+            else if (toolTip.SetText(rect, it.Text))
+            {
+                CloseTip();
+                OpenTip(it, rect);
+            }
+            return false;
+        }
+
+        #endregion
+
+        #endregion
 
         protected override void OnMouseLeave(EventArgs e)
         {
             base.OnMouseLeave(e);
             if (RectangleToScreen(ClientRectangle).Contains(MousePosition)) return;
-            hoveindexold = -1;
-            tooltipForm?.Close();
-            tooltipForm = null;
+            CloseTip();
             ScrollBar.Leave();
             ILeave();
         }
@@ -1263,6 +1472,169 @@ namespace AntdUI
 
         #endregion
 
+        #region 键盘
+
+        protected override bool ProcessCmdKey(ref System.Windows.Forms.Message msg, Keys keyData)
+        {
+            var r = base.ProcessCmdKey(ref msg, keyData);
+            switch (keyData)
+            {
+                case Keys.Up:
+                    if (selectItem == null)
+                    {
+                        if (items != null)
+                        {
+                            Select(items[0]);
+                            return true;
+                        }
+                    }
+                    else if (FindUp(focusItem ?? selectItem)) return true;
+                    break;
+                case Keys.Down:
+                    if (selectItem == null)
+                    {
+                        if (items != null)
+                        {
+                            Select(items[items.Count - 1]);
+                            return true;
+                        }
+                    }
+                    else if (FindDown(focusItem ?? selectItem)) return true;
+                    break;
+                case Keys.Left:
+                    if (selectItem != null && FindLeft(focusItem ?? selectItem)) return true;
+                    break;
+                case Keys.Right:
+                    if (selectItem != null && FindRight(focusItem ?? selectItem)) return true;
+                    break;
+                case Keys.Enter:
+                    if (selectItem != null)
+                    {
+                        var item = focusItem ?? selectItem;
+                        if (item.CanExpand) item.Expand = !item.Expand;
+                        else Select(item);
+                    }
+                    break;
+            }
+            return r;
+        }
+
+        bool FindUp(MenuItem item)
+        {
+            var p1 = item.PARENTITEM;
+            if (p1 == null)
+            {
+                int index = items!.IndexOf(item) - 1;
+                if (index >= 0)
+                {
+                    SetFocusItem(items[index]);
+                    return true;
+                }
+            }
+            else
+            {
+                int index = p1.items!.IndexOf(item) - 1;
+                if (index >= 0) SetFocusItem(FindUpExpand(p1.items[index]));
+                else SetFocusItem(p1);
+                return true;
+            }
+            return false;
+        }
+        MenuItem FindUpExpand(MenuItem it)
+        {
+            if (it.CanExpand && it.Expand) return FindUpExpand(it.items![it.items.Count - 1]);
+            return it;
+        }
+        bool FindDown(MenuItem item, bool canex = true)
+        {
+            if (canex && item.CanExpand && item.Expand)
+            {
+                SetFocusItem(item.items![0]);
+                return true;
+            }
+            var p1 = item.PARENTITEM;
+            if (p1 == null)
+            {
+                int index = items!.IndexOf(item) + 1;
+                if (index < items.Count)
+                {
+                    SetFocusItem(items[index]);
+                    return true;
+                }
+            }
+            else
+            {
+                int index = p1.items!.IndexOf(item) + 1;
+                if (index < p1.items.Count)
+                {
+                    SetFocusItem(p1.items[index]);
+                    return true;
+                }
+                else
+                {
+                    if (p1.PARENTITEM == null)
+                    {
+                        var sub = items!;
+                        int index2 = sub.Count + 1;
+                        if (index2 < sub.Count)
+                        {
+                            var r = FindDown(sub[sub.Count + 1]);
+                            if (r) return true;
+                        }
+                        else
+                        {
+                            var r = FindDown(p1, false);
+                            if (r) return true;
+                        }
+                    }
+                    else
+                    {
+                        var sub = p1.PARENTITEM.items!;
+                        int index2 = sub.Count + 1;
+                        if (index2 < sub.Count)
+                        {
+                            var r = FindDown(sub[index2]);
+                            if (r) return true;
+                        }
+                        else
+                        {
+                            var r = FindDown(p1, false);
+                            if (r) return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        bool FindLeft(MenuItem item)
+        {
+            if (item.CanExpand && item.Expand) item.Expand = false;
+            return true;
+        }
+        bool FindRight(MenuItem item)
+        {
+            if (item.CanExpand && !item.Expand) item.Expand = true;
+            return true;
+        }
+        void SetFocusItem(MenuItem item)
+        {
+            switch (FocusMode)
+            {
+                case TFocusMode.Line:
+                case TFocusMode.Border:
+                    focusItem = item;
+                    Invalidate();
+                    Focus(item);
+                    break;
+                default:
+                    Select(item);
+                    break;
+            }
+        }
+
+        #endregion
+
         #region 方法
 
         /// <summary>
@@ -1293,17 +1665,24 @@ namespace AntdUI
                 {
                     it.Select = true;
                     tmpAM = true;
-                    SelectChanged?.Invoke(this, new MenuSelectEventArgs(it));
-                    if (SelectEx(it.PARENTITEM) > 0)
-                    {
-                        ChangeList();
-                        Invalidate();
-                    }
+                    ItemClick?.Invoke(this, new MenuItemEventArgs(it, new MouseEventArgs(MouseButtons.None, 0, 0, 0, 0)));
+                    SelectItem = it;
+                    if (SelectEx(it.PARENTITEM) > 0) ChangeList(true);
                     tmpAM = false;
-                    if (focus && ScrollBar.ShowY) ScrollBar.ValueY = it.rect.Y;
+                    Invalidate();
+                    if (focus) Focus(it);
                     return;
                 }
                 else if (it.items != null && it.items.Count > 0) Select(item, focus, it.items);
+            }
+        }
+
+        public void Focus(MenuItem menuItem, bool force = false)
+        {
+            if (ScrollBar.ShowY)
+            {
+                int sy = ScrollBar.ValueY;
+                if (force || (menuItem.rect.Y < sy || menuItem.rect.Bottom > sy + Height)) ScrollBar.ValueY = menuItem.rect.Y - Padding.Top;
             }
         }
 
@@ -1355,10 +1734,22 @@ namespace AntdUI
         public event SelectEventHandler? SelectChanged;
 
         /// <summary>
+        /// 点击项时发生
+        /// </summary>
+        [Description("点击项时发生"), Category("行为")]
+        public event MenuItemEventHandler? ItemClick;
+
+        /// <summary>
         /// Select 属性值更改前发生
         /// </summary>
         [Description("Select 属性值更改前发生"), Category("行为")]
         public event SelectBoolEventHandler? SelectChanging;
+
+        /// <summary>
+        /// 自定义按钮点击时发生
+        /// </summary>
+        [Description("自定义按钮点击时发生"), Category("行为")]
+        public event MenuCustomButtonEventHandler? CustomButtonClick;
 
         bool IsCanChang(MenuItem it)
         {
@@ -1372,7 +1763,6 @@ namespace AntdUI
 
         #region 子窗口
 
-        TooltipForm? tooltipForm;
         ILayeredForm? subForm;
         public ILayeredForm? SubForm() => subForm;
         internal int select_x = 0;
@@ -1406,7 +1796,8 @@ namespace AntdUI
                             foreach (var it in list) it.Select = true;
                         }
                         item.Select = true;
-                        SelectChanged?.Invoke(this, new MenuSelectEventArgs(item));
+                        SelectItem = item;
+                        ItemClick?.Invoke(this, new MenuItemEventArgs(item, new MouseEventArgs(MouseButtons.None, 0, 0, 0, 0)));
                         Invalidate();
                     }
                 }
@@ -1425,6 +1816,19 @@ namespace AntdUI
             return false;
         }
 
+        bool OpenDropDown(MenuItem it)
+        {
+            if (it.items == null || it.items.Count == 0) return true;
+            select_x = 0;
+            subForm = new LayeredFormMenuDown(this, radius, it.Rect, it.items);
+            subForm.Show(this);
+            return false;
+        }
+        void CloseDropDown()
+        {
+            subForm?.Close();
+            subForm = null;
+        }
 
         #endregion
 
@@ -1450,8 +1854,8 @@ namespace AntdUI
         {
             action = render =>
             {
-                if (render) it.ChangeList();
-                it.Invalidate();
+                if (render) it.ChangeList(true);
+                else it.Invalidate();
             };
             return this;
         }
@@ -1460,8 +1864,8 @@ namespace AntdUI
             action = render =>
             {
                 if (it.PARENT == null) return;
-                if (render) it.PARENT.ChangeList();
-                it.PARENT.Invalidate();
+                if (render) it.PARENT.ChangeList(true);
+                else it.PARENT.Invalidate();
             };
             return this;
         }
@@ -1655,7 +2059,8 @@ namespace AntdUI
                 expand = value;
                 if (items != null && items.Count > 0)
                 {
-                    if (value && PARENT != null && PARENT.Unique)
+                    if (PARENT == null) return;
+                    if (value && PARENT.Unique)
                     {
                         if (PARENTITEM == null)
                         {
@@ -1672,9 +2077,9 @@ namespace AntdUI
                             }
                         }
                     }
-                    if (Config.HasAnimation(nameof(Menu)))
+                    if (((PARENT.Mode == TMenuMode.Inline && !PARENT.Collapsed) || PARENT.Mode == TMenuMode.InlineNoText) && Config.HasAnimation(nameof(Menu)))
                     {
-                        if (PARENT != null && PARENT.tmpAM)
+                        if (PARENT.tmpAM)
                         {
                             ExpandProg = 1F;
                             ArrowProg = value ? 1F : -1F;
@@ -1752,20 +2157,6 @@ namespace AntdUI
 
         [Description("是否可以展开"), Category("行为"), DefaultValue(false)]
         public bool CanExpand => visible && items != null && items.Count > 0;
-
-        /// <summary>
-        /// 菜单坐标位置
-        /// </summary>
-        public Rectangle Rect
-        {
-            get
-            {
-                if (PARENT == null) return rect;
-                int y = PARENT.ScrollBar.Value;
-                if (y != 0F) return new Rectangle(rect.X, rect.Y - y, rect.Width, rect.Height);
-                return rect;
-            }
-        }
 
         #endregion
 
@@ -1956,6 +2347,18 @@ namespace AntdUI
         [Description("是否选中"), Category("外观"), DefaultValue(false)]
         public bool Select { get; set; }
 
+        #region 自定义按钮
+
+        /// <summary>
+        /// 自定义按钮的集合
+        /// </summary>
+        [Browsable(false)]
+        [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+        [Description("自定义按钮的集合"), Category("外观")]
+        public List<MenuButton>? Button { get; set; }
+
+        #endregion
+
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public MenuItem? PARENTITEM { get; set; }
 
@@ -1966,59 +2369,140 @@ namespace AntdUI
 
         #region 布局
 
-        internal void SetRect(int depth, bool indent, TMenuMode mode, Rectangle _rect, int icon_size, int gap)
+        /// <summary>
+        /// 菜单坐标位置
+        /// </summary>
+        public Rectangle Rect
         {
-            Depth = depth;
-            rect = _rect;
-            if (HasIcon)
+            get
             {
-                if (indent || depth > 1)
-                {
-                    ico_rect = new Rectangle(_rect.X + (gap * (depth + 1)), _rect.Y + (_rect.Height - icon_size) / 2, icon_size, icon_size);
-                    txt_rect = new Rectangle(ico_rect.X + ico_rect.Width + gap, _rect.Y, _rect.Width - (ico_rect.Width + gap * 2), _rect.Height);
-                }
-                else
-                {
-                    ico_rect = new Rectangle(_rect.X + gap, _rect.Y + (_rect.Height - icon_size) / 2, icon_size, icon_size);
-                    txt_rect = new Rectangle(ico_rect.X + ico_rect.Width + gap, _rect.Y, _rect.Width - (ico_rect.Width + gap * 2), _rect.Height);
-                }
-                arr_rect = new Rectangle(_rect.Right - ico_rect.Height - (mode == TMenuMode.InlineNoText ? -(int)(4 * Config.Dpi) : (int)(ico_rect.Height * 0.9F)), _rect.Y + (_rect.Height - ico_rect.Height) / 2, ico_rect.Height, ico_rect.Height);
+                if (PARENT == null) return rect;
+                int y = PARENT.ScrollBar.Value;
+                if (y != 0F) return new Rectangle(rect.X, rect.Y - y, rect.Width, rect.Height);
+                return rect;
             }
-            else
-            {
-                if (indent || depth > 1) txt_rect = new Rectangle(_rect.X + (gap * (depth + 1)), _rect.Y, _rect.Width - (gap * 2), _rect.Height);
-                else txt_rect = new Rectangle(_rect.X + gap, _rect.Y, _rect.Width - (gap * 2), _rect.Height);
-                arr_rect = new Rectangle(_rect.Right - icon_size - (mode == TMenuMode.InlineNoText ? -(int)(4 * Config.Dpi) : (int)(ico_rect.Height * 0.9F)), _rect.Y + (_rect.Height - icon_size) / 2, icon_size, icon_size);
-            }
-            Show = true;
         }
-        internal void SetRectNoArr(int depth, Rectangle _rect, int icon_size, int gap)
+
+        internal int SetRect(Menu obj, int depth, bool indent, Rectangle _rect, int icon_size, int arrow_size, int gap, int gap2, int sp, int sp2, int inlineIndent, int iconsp, int scx, out int exr)
         {
             Depth = depth;
             rect = _rect;
+            int x = gap, usew = gap2, y = (_rect.Height - icon_size) / 2;
+            if (indent && depth > 0)
+            {
+                int tmp = inlineIndent * depth;
+                x += tmp;
+                usew += tmp;
+            }
+            else if (depth > 1)
+            {
+                int tmp = inlineIndent * (depth - 1);
+                x += tmp;
+                usew += tmp;
+            }
             if (HasIcon)
             {
-                ico_rect = new Rectangle(_rect.X + gap, _rect.Y + (_rect.Height - icon_size) / 2, icon_size, icon_size);
-                txt_rect = new Rectangle(ico_rect.X + ico_rect.Width + gap, _rect.Y, _rect.Width - (ico_rect.Width + gap * 2), _rect.Height);
+                int tmp = icon_size + iconsp;
+                ico_rect = new Rectangle(_rect.X + x, _rect.Y + y, icon_size, icon_size);
+
+                x += tmp;
+                usew += tmp;
+
+                txt_rect = new Rectangle(_rect.X + x, _rect.Y, _rect.Width - usew, _rect.Height);
             }
-            else txt_rect = new Rectangle(_rect.X + gap, _rect.Y, _rect.Width - (gap * 2), _rect.Height);
+            else txt_rect = new Rectangle(_rect.X + x, _rect.Y, _rect.Width - usew, _rect.Height);
+
+            int ur = _rect.Right - icon_size - gap - scx;
+            arr_rect = new Rectangle(ur, _rect.Y + y, icon_size, icon_size);
+
+            exr = 0;
+            if (Button != null)
+            {
+                int sone = icon_size + iconsp;
+                foreach (var btn in Button)
+                {
+                    btn.PARENT = obj;
+                    ur -= sone;
+                    exr += sone;
+                    btn.rect = new Rectangle(ur, _rect.Y + y, icon_size, icon_size);
+                }
+            }
+
+            Show = true;
+            return usew;
+        }
+        internal int SetRectInlineNoText(Rectangle _rect, int icon_size, int arrow_size, int gap, int gap2, int sp, int sp2, int iconsp)
+        {
+            Depth = 0;
+            rect = _rect;
+            int x = gap, usew = gap2;
+            if (HasIcon)
+            {
+                int tmp = icon_size + iconsp, y = (_rect.Height - icon_size) / 2;
+                ico_rect = new Rectangle(_rect.X + x, _rect.Y + y, icon_size, icon_size);
+
+                x += tmp;
+                usew += tmp;
+
+                txt_rect = new Rectangle(_rect.X + x, _rect.Y, _rect.Width - usew, _rect.Height);
+            }
+            else txt_rect = new Rectangle(_rect.X + x, _rect.Y, _rect.Width - usew, _rect.Height);
+            arr_rect = new Rectangle(_rect.Right - (arrow_size - sp), _rect.Y + (_rect.Height - arrow_size) / 2, arrow_size, arrow_size);
+            Show = true;
+            return usew;
+        }
+        internal void SetRectNoArr(Rectangle _rect, Rectangle rect_text)
+        {
+            Depth = 0;
+            rect = _rect;
+            txt_rect = rect_text;
             Show = true;
         }
         internal Rectangle rect { get; set; }
         internal Rectangle arr_rect { get; set; }
 
-        internal bool Contains(int x, int y, int sx, int sy, out bool change)
+        internal bool Contains(int x, int y, int sx, int sy, out MenuButton? btn)
         {
+            btn = null;
             if (rect.Contains(x + sx, y + sy))
             {
-                change = SetHover(true);
+                SetHover(true);
+                if (Button != null)
+                {
+                    foreach (var item in Button)
+                    {
+                        if (item.Contains(x, y, sx, sy))
+                        {
+                            btn = item;
+                            return true;
+                        }
+                    }
+                }
                 return true;
             }
             else
             {
-                change = SetHover(false);
+                SetHover(false);
                 return false;
             }
+        }
+        internal bool Contains(int x, int y, int sx, int sy, ref int hand, ref int change)
+        {
+            if (rect.Contains(x + sx, y + sy))
+            {
+                if (SetHover(true)) change++;
+                if (Button != null)
+                {
+                    foreach (var item in Button)
+                    {
+                        if (item.Contains(x, y, sx, sy, ref change)) hand++;
+                    }
+                }
+                hand++;
+                return true;
+            }
+            else if (SetHover(false)) change++;
+            return false;
         }
 
         internal bool SetHover(bool val)
@@ -2055,12 +2539,7 @@ namespace AntdUI
         internal bool show { get; set; }
         internal bool Show { get; set; }
         void Invalidate() => PARENT?.Invalidate();
-        void Invalidates()
-        {
-            if (PARENT == null) return;
-            PARENT.ChangeList();
-            PARENT.Invalidate();
-        }
+        void Invalidates() => PARENT?.ChangeList(true);
 
         #endregion
 
@@ -2199,5 +2678,449 @@ namespace AntdUI
         #endregion
 
         public override string? ToString() => Text;
+    }
+
+    public class MenuButton : BadgeConfig
+    {
+        public MenuButton() { }
+        public MenuButton(Image? icon)
+        {
+            Icon = icon;
+        }
+        public MenuButton(string? icon_svg)
+        {
+            IconSvg = icon_svg;
+        }
+
+        /// <summary>
+        /// ID
+        /// </summary>
+        [Description("ID"), Category("数据"), DefaultValue(null)]
+        public string? ID { get; set; }
+
+        /// <summary>
+        /// 名称
+        /// </summary>
+        [Description("名称"), Category("数据"), DefaultValue(null)]
+        public string? Name { get; set; }
+
+        #region 图标
+
+        Image? icon;
+        /// <summary>
+        /// 图标
+        /// </summary>
+        [Description("图标"), Category("外观"), DefaultValue(null)]
+        public Image? Icon
+        {
+            get => icon;
+            set
+            {
+                if (icon == value) return;
+                icon = value;
+                Invalidates();
+            }
+        }
+
+        string? iconSvg;
+        /// <summary>
+        /// 图标
+        /// </summary>
+        [Description("图标SVG"), Category("外观"), DefaultValue(null)]
+        public string? IconSvg
+        {
+            get => iconSvg;
+            set
+            {
+                if (iconSvg == value) return;
+                iconSvg = value;
+                Invalidates();
+            }
+        }
+
+        /// <summary>
+        /// 是否包含图片
+        /// </summary>
+        internal bool HasIcon => !string.IsNullOrWhiteSpace(iconSvg) || icon != null;
+
+        /// <summary>
+        /// 图标激活
+        /// </summary>
+        [Description("图标激活"), Category("外观"), DefaultValue(null)]
+        public Image? IconActive { get; set; }
+
+        /// <summary>
+        /// 图标激活SVG
+        /// </summary>
+        [Description("图标激活SVG"), Category("外观"), DefaultValue(null)]
+        public string? IconActiveSvg { get; set; }
+
+        #endregion
+
+        bool visible = true;
+        /// <summary>
+        /// 是否显示
+        /// </summary>
+        [Description("是否显示"), Category("外观"), DefaultValue(true)]
+        public bool Visible
+        {
+            get => visible;
+            set
+            {
+                if (visible == value) return;
+                visible = value;
+                Invalidates();
+            }
+        }
+
+        /// <summary>
+        /// 用户定义数据
+        /// </summary>
+        [Description("用户定义数据"), Category("数据"), DefaultValue(null)]
+        public object? Tag { get; set; }
+
+        #region 禁用
+
+        bool enabled = true;
+        /// <summary>
+        /// 禁用状态
+        /// </summary>
+        [Description("禁用状态"), Category("行为"), DefaultValue(true)]
+        public bool Enabled
+        {
+            get => enabled;
+            set
+            {
+                if (enabled == value) return;
+                enabled = value;
+                Invalidate();
+            }
+        }
+
+        #endregion
+
+        #region 徽标
+
+        string? badge;
+        [Description("徽标内容"), Category("徽标"), DefaultValue(null), Localizable(true)]
+        public string? Badge
+        {
+            get => badge;
+            set
+            {
+                if (badge == value) return;
+                badge = value;
+                Invalidate();
+            }
+        }
+
+        string? badgeSvg;
+        [Description("徽标SVG"), Category("徽标"), DefaultValue(null)]
+        public string? BadgeSvg
+        {
+            get => badgeSvg;
+            set
+            {
+                if (badgeSvg == value) return;
+                badgeSvg = value;
+                Invalidate();
+            }
+        }
+
+        TAlign badgeAlign = TAlign.Right;
+        [Description("徽标方向"), Category("徽标"), DefaultValue(TAlign.Right)]
+        public TAlign BadgeAlign
+        {
+            get => badgeAlign;
+            set
+            {
+                if (badgeAlign == value) return;
+                badgeAlign = value;
+                if (badge != null || badgeSvg != null) Invalidate();
+            }
+        }
+
+        float badgeSize = .6F;
+        [Description("徽标比例"), Category("徽标"), DefaultValue(.6F)]
+        public float BadgeSize
+        {
+            get => badgeSize;
+            set
+            {
+                if (badgeSize == value) return;
+                badgeSize = value;
+                if (badge != null || badgeSvg != null) Invalidate();
+            }
+        }
+
+        bool badgeMode = false;
+        [Description("徽标模式（镂空）"), Category("徽标"), DefaultValue(false)]
+        public bool BadgeMode
+        {
+            get => badgeMode;
+            set
+            {
+                if (badgeMode == value) return;
+                badgeMode = value;
+                if (badge != null || badgeSvg != null) Invalidate();
+            }
+        }
+
+        Color? badgeback;
+        [Description("徽标背景颜色"), Category("徽标"), DefaultValue(null)]
+        public Color? BadgeBack
+        {
+            get => badgeback;
+            set
+            {
+                if (badgeback == value) return;
+                badgeback = value;
+                if (badge != null || badgeSvg != null) Invalidate();
+            }
+        }
+
+        int badgeOffsetX = 1, badgeOffsetY = 1;
+        /// <summary>
+        /// 徽标偏移X
+        /// </summary>
+        [Description("徽标偏移X"), Category("徽标"), DefaultValue(1)]
+        public int BadgeOffsetX
+        {
+            get => badgeOffsetX;
+            set
+            {
+                if (badgeOffsetX == value) return;
+                badgeOffsetX = value;
+                if (badge != null || badgeSvg != null) Invalidate();
+            }
+        }
+
+        /// <summary>
+        /// 徽标偏移Y
+        /// </summary>
+        [Description("徽标偏移Y"), Category("徽标"), DefaultValue(1)]
+        public int BadgeOffsetY
+        {
+            get => badgeOffsetY;
+            set
+            {
+                if (badgeOffsetY == value) return;
+                badgeOffsetY = value;
+                if (badge != null || badgeSvg != null) Invalidate();
+            }
+        }
+
+        #endregion
+
+        #region 悬浮态
+
+        bool hover = false;
+        /// <summary>
+        /// 是否悬浮
+        /// </summary>
+        internal bool Hover
+        {
+            get => hover;
+            set
+            {
+                if (hover == value) return;
+                hover = value;
+                if (Config.HasAnimation(nameof(Menu)))
+                {
+                    ThreadHover?.Dispose();
+                    AnimationHover = true;
+                    var t = Animation.TotalFrames(20, 200);
+                    if (value)
+                    {
+                        ThreadHover = new ITask((i) =>
+                        {
+                            AnimationHoverValue = Animation.Animate(i, t, 1F, AnimationType.Ball);
+                            Invalidate();
+                            return true;
+                        }, 20, t, () =>
+                        {
+                            AnimationHover = false;
+                            AnimationHoverValue = 1;
+                            Invalidate();
+                        });
+                    }
+                    else
+                    {
+                        ThreadHover = new ITask((i) =>
+                        {
+                            AnimationHoverValue = 1F - Animation.Animate(i, t, 1F, AnimationType.Ball);
+                            Invalidate();
+                            return true;
+                        }, 20, t, () =>
+                        {
+                            AnimationHover = false;
+                            AnimationHoverValue = 0;
+                            Invalidate();
+                        });
+                    }
+                }
+            }
+        }
+
+        #endregion
+
+        #region 内部
+
+        internal Menu? PARENT { get; set; }
+
+        #region 布局
+
+        internal Rectangle rect { get; set; }
+
+        internal bool Contains(int x, int y, int sx, int sy)
+        {
+            if (rect.Contains(x + sx, y + sy))
+            {
+                SetHover(true);
+                return true;
+            }
+            else
+            {
+                SetHover(false);
+                return false;
+            }
+        }
+        internal bool Contains(int x, int y, int sx, int sy, ref int change)
+        {
+            if (rect.Contains(x + sx, y + sy))
+            {
+                if (SetHover(true)) change++;
+                return true;
+            }
+            else
+            {
+                if (SetHover(false)) change++;
+                return false;
+            }
+        }
+
+        internal bool SetHover(bool val)
+        {
+            bool change = false;
+            if (val)
+            {
+                if (!hover) change = true;
+                Hover = true;
+            }
+            else
+            {
+                if (hover) change = true;
+                Hover = false;
+            }
+            return change;
+        }
+
+        internal float AnimationHoverValue = 0;
+        internal bool AnimationHover = false;
+        ITask? ThreadHover;
+
+        #endregion
+
+        void Invalidate() => PARENT?.Invalidate();
+        void Invalidates() => PARENT?.ChangeList(true);
+
+        #endregion
+
+        #region 设置
+
+        #region 图标
+
+        public MenuButton SetIcon(Image? img)
+        {
+            icon = img;
+            return this;
+        }
+
+        public MenuButton SetIcon(string? svg)
+        {
+            iconSvg = svg;
+            return this;
+        }
+
+        public MenuButton SetIcon(Image? img, Image? hover)
+        {
+            icon = img;
+            IconActive = hover;
+            return this;
+        }
+
+        public MenuButton SetIcon(string? svg, string? hover)
+        {
+            iconSvg = svg;
+            IconActiveSvg = hover;
+            return this;
+        }
+
+        #endregion
+
+        public MenuButton SetID(string? value)
+        {
+            ID = value;
+            return this;
+        }
+
+        public MenuButton SetName(string? value)
+        {
+            Name = value;
+            return this;
+        }
+
+        public MenuButton SetVisible(bool value = false)
+        {
+            visible = value;
+            return this;
+        }
+
+        public MenuButton SetEnabled(bool value = false)
+        {
+            enabled = value;
+            return this;
+        }
+
+        #region 徽标
+
+        public MenuButton SetBadge(string? value = " ", TAlign align = TAlign.TR)
+        {
+            badge = value;
+            badgeAlign = align;
+            return this;
+        }
+        public MenuButton SetBadgeSvg(string? value, TAlign align = TAlign.TR)
+        {
+            badgeSvg = value;
+            badgeAlign = align;
+            return this;
+        }
+        public MenuButton SetBadgeOffset(int x, int y)
+        {
+            BadgeOffsetX = x;
+            BadgeOffsetY = y;
+            return this;
+        }
+        public MenuButton SetBadgeSize(float value)
+        {
+            BadgeSize = value;
+            return this;
+        }
+        public MenuButton SetBadgeBack(Color? value)
+        {
+            BadgeBack = value;
+            return this;
+        }
+
+        #endregion
+
+        public MenuButton SetTag(object? value)
+        {
+            Tag = value;
+            return this;
+        }
+
+        #endregion
     }
 }

@@ -40,6 +40,22 @@ namespace AntdUI
     {
         #region 属性
 
+        /// <summary>
+        /// 自动大小
+        /// </summary>
+        [Browsable(true)]
+        [Description("自动大小"), Category("外观"), DefaultValue(false)]
+        public override bool AutoSize
+        {
+            get => base.AutoSize;
+            set
+            {
+                if (base.AutoSize == value) return;
+                base.AutoSize = value;
+                LoadLayout(false);
+            }
+        }
+
         Color? fore;
         /// <summary>
         /// 文字颜色
@@ -54,6 +70,22 @@ namespace AntdUI
                 if (fore == value) return;
                 fore = value;
                 Invalidate();
+            }
+        }
+
+        Color? foreActive;
+        /// <summary>
+        /// 文字激活颜色
+        /// </summary>
+        [Description("文字激活颜色"), Category("外观"), DefaultValue(null)]
+        [Editor(typeof(Design.ColorEditor), typeof(UITypeEditor))]
+        public Color? ForeActive
+        {
+            get => foreActive;
+            set
+            {
+                if (foreActive == value) return;
+                foreActive = value;
             }
         }
 
@@ -239,13 +271,11 @@ namespace AntdUI
             set
             {
                 if (fontExpand == value) return;
-
                 fontExpand = value;
                 Invalidate();
-
             }
         }
-        public override Font Font { get => base.Font; set { base.Font = value; if (value != null) fontExpand = new Font(value, FontStyle.Bold); } }
+
         #endregion
 
         #region 布局
@@ -256,9 +286,10 @@ namespace AntdUI
             LoadLayout(false);
         }
 
+        internal bool canset = true;
         protected override void OnSizeChanged(EventArgs e)
         {
-            LoadLayout(false);
+            if (canset) LoadLayout(false);
             base.OnSizeChanged(e);
         }
 
@@ -353,6 +384,13 @@ namespace AntdUI
                         int y = rect.Y + use_y;
                         use_y += LoadLayout(g, it, rect, size, title_height, gap, gap_x, gap_y, content_x, content_y, full_h, it.Full, y);
                     }
+                }
+
+                if (AutoSize)
+                {
+                    int rh = use_y + Margin.Vertical;
+                    if (InvokeRequired) BeginInvoke(() => Height = rh);
+                    else Height = rh;
                 }
             });
         }
@@ -654,8 +692,6 @@ namespace AntdUI
         void PaintItemIconText(Canvas g, CollapseItem item, SolidBrush fore)
         {
             Rectangle rect = item.RectText;
-            Color foreColor = fore.Color;
-            if (item.Expand) fore.Color = AntdUI.Style.Db.PrimaryActive;
             if (item.HasIcon)
             {
                 int height = rect.Height * 2;
@@ -674,8 +710,8 @@ namespace AntdUI
                 int fs = (int)(fnt.Size - Font.Size);
                 rect.Inflate(fs, fs);
             }
-            g.String(item.Text, fnt, fore, rect, s_l);
-            fore.Color = foreColor;
+            if (item.Expand && foreActive.HasValue) g.String(item.Text, fnt, foreActive.Value, rect, s_l);
+            else g.String(item.Text, fnt, fore, rect, s_l);
         }
         void PaintItem(Canvas g, CollapseItem item, SolidBrush fore, Pen pen_arr)
         {
@@ -916,13 +952,12 @@ namespace AntdUI
         protected override void OnMouseLeave(EventArgs e)
         {
             base.OnMouseLeave(e);
-
-            tooltipForm?.Close();
-            tooltipForm = null;
+            CloseTip();
 
         }
         protected override void OnMouseMove(MouseEventArgs e)
         {
+            base.OnMouseMove(e);
             if (items == null || items.Count == 0) return;
             foreach (var item in items)
             {
@@ -943,7 +978,6 @@ namespace AntdUI
                             SetCursor(true);
                             Invalidate(btn.rect);
                         }
-                        if (string.IsNullOrEmpty(btn.Tooltip) == false) ShowTooltip(btn);
                         return;
                     }
                     else
@@ -958,24 +992,63 @@ namespace AntdUI
                 }
             }
             SetCursor(false);
-            base.OnMouseMove(e);
         }
 
-        TooltipForm? tooltipForm;
-        void ShowTooltip(CollapseGroupButton btn)
+        #region 鼠标悬浮
+
+        protected override bool CanMouseMove { get; set; } = true;
+        protected override void OnMouseHover(int x, int y)
         {
-            if (btn.Tooltip == null) return;
-            if (tooltipForm == null)
+            CloseTip();
+            if (x == -1 || y == -1 || items == null || items.Count == 0) return;
+            foreach (var item in items)
             {
-                tooltipForm = new TooltipForm(this, btn.rect, btn.Tooltip, TooltipConfig ?? new TooltipConfig
+                if (item.buttons == null || item.buttons.Count == 0) continue;
+                foreach (var btn in item.buttons)
+                {
+                    if (btn.rect.Contains(x, y))
+                    {
+                        OpenTip(btn);
+                        return;
+                    }
+                }
+            }
+        }
+
+        #region Tip
+
+        TooltipForm? toolTip;
+
+        public void CloseTip()
+        {
+            toolTip?.IClose();
+            toolTip = null;
+        }
+
+        bool OpenTip(CollapseGroupButton btn)
+        {
+            if (btn.Tooltip == null) CloseTip();
+            else if (toolTip == null)
+            {
+                toolTip = new TooltipForm(this, btn.rect, btn.Tooltip, TooltipConfig ?? new TooltipConfig
                 {
                     Font = Font,
                     ArrowAlign = TAlign.Bottom,
                 });
-                tooltipForm.Show(this);
+                toolTip.Show(this);
             }
-            else tooltipForm.SetText(btn.rect, btn.Tooltip);
+            else if (toolTip.SetText(btn.rect, btn.Tooltip))
+            {
+                CloseTip();
+                OpenTip(btn);
+            }
+            return false;
         }
+
+        #endregion
+
+        #endregion
+
         #endregion
 
         #region 方法
@@ -1092,6 +1165,7 @@ namespace AntdUI
                 if (value) PARENT?.UniqueOne(this);
                 if (PARENT != null && PARENT.IsHandleCreated && Config.HasAnimation(nameof(Collapse)))
                 {
+                    if (PARENT.AutoSize) PARENT.canset = false;
                     Location = new Point(-Width, -Height);
                     ThreadExpand?.Dispose();
                     float oldval = -1;
@@ -1106,6 +1180,7 @@ namespace AntdUI
                             PARENT.LoadLayout();
                         }, () =>
                         {
+                            if (PARENT.AutoSize) PARENT.canset = true;
                             ExpandProg = 1F;
                             ExpandThread = false;
                             PARENT.LoadLayout();
@@ -1119,6 +1194,7 @@ namespace AntdUI
                             PARENT.LoadLayout();
                         }, () =>
                         {
+                            if (PARENT.AutoSize) PARENT.canset = true;
                             ExpandProg = 1F;
                             ExpandThread = false;
                             PARENT.LoadLayout();
@@ -1234,6 +1310,7 @@ namespace AntdUI
         internal bool HasIcon => iconSvg != null || Icon != null;
 
         #endregion
+
         #endregion
 
         #region 坐标

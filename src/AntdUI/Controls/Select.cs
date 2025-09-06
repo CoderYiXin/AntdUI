@@ -30,6 +30,7 @@ namespace AntdUI
     /// <summary>
     /// Select 选择器
     /// </summary>
+    /// <seealso cref="Input"/>
     /// <remarks>下拉选择器。</remarks>
     [Description("Select 选择器")]
     [ToolboxItem(true)]
@@ -129,6 +130,18 @@ namespace AntdUI
         [Description("为空依旧下拉"), Category("外观"), DefaultValue(false)]
         public bool Empty { get; set; }
 
+        /// <summary>
+        /// 自动设置下拉前缀
+        /// </summary>
+        [Description("自动设置下拉前缀"), Category("外观"), DefaultValue(false)]
+        public bool AutoPrefixSvg { get; set; }
+
+        /// <summary>
+        /// 鼠标滚轮修改值
+        /// </summary>
+        [Description("鼠标滚轮修改值"), Category("交互"), DefaultValue(true)]
+        public bool WheelModifyEnabled { get; set; } = true;
+
         #region 数据
 
         BaseCollection? items;
@@ -214,7 +227,7 @@ namespace AntdUI
             {
                 selectedItem = it;
                 selectedValue = it.Tag;
-                if (string.IsNullOrEmpty(it.IconSvg) == false) PrefixSvg = it.IconSvg;
+                if (AutoPrefixSvg) PrefixSvg = it.IconSvg;
                 Text = it.Text;
             }
             else
@@ -285,6 +298,7 @@ namespace AntdUI
             selectedItem = item;
             selectedValue = value;
             Text = text;
+            if (AutoPrefixSvg && item != null) PrefixSvg = item.IconSvg;
             SelectedValueChanged?.Invoke(this, new ObjectNEventArgs(selectedValue));
             SelectedIndexChanged?.Invoke(this, new IntEventArgs(selectedIndex));
             SelectedIndexsChanged?.Invoke(this, new IntXYEventArgs(selectedIndexX, selectedIndex));
@@ -584,6 +598,17 @@ namespace AntdUI
             }
         }
 
+        protected override void OnMouseWheel(MouseEventArgs e)
+        {
+            base.OnMouseWheel(e);
+            if (ReadOnly || !WheelModifyEnabled || items == null || items.Count == 0) return;
+            int newIndex;
+            if (e.Delta > 0) newIndex = SelectedIndex <= 0 ? items.Count - 1 : SelectedIndex - 1;
+            else newIndex = SelectedIndex >= items.Count - 1 ? 0 : SelectedIndex + 1;
+            SelectedIndex = newIndex;
+            if (e is HandledMouseEventArgs handled) handled.Handled = true;
+        }
+
         #endregion
 
         #region 语言
@@ -706,6 +731,8 @@ namespace AntdUI
         /// </summary>
         public IList<object>? Sub { get; set; }
 
+        public int MaxCount { get; set; }
+
         public object Tag { get; set; }
 
         #region 主题
@@ -815,6 +842,12 @@ namespace AntdUI
         public SelectItem SetSub(params object[] value)
         {
             Sub = value;
+            return this;
+        }
+
+        public SelectItem SetSub(int value)
+        {
+            MaxCount = value;
             return this;
         }
 
@@ -1051,8 +1084,12 @@ namespace AntdUI
             ForeSub = item.ForeSub;
             BackActive = item.BackActive;
             BackActiveExtend = item.BackActiveExtend;
+            MaxCount = item.MaxCount;
         }
 
+        /// <summary>
+        /// 线条布局
+        /// </summary>
         public ObjectItem(int i, Rectangle rect)
         {
             I = i;
@@ -1095,6 +1132,8 @@ namespace AntdUI
         /// 子选项
         /// </summary>
         public IList<object>? Sub { get; set; }
+
+        public int MaxCount { get; set; }
 
         public object Tag { get; set; }
         public SelectItem? Select { get; set; }
@@ -1238,6 +1277,7 @@ namespace AntdUI
             BackActiveExtend = item.BackActiveExtend;
             Rect = rect;
             RectCheck = rect_check;
+            MaxCount = item.MaxCount;
         }
 
         public ObjectItemCheck(Rectangle rect)
@@ -1281,6 +1321,8 @@ namespace AntdUI
         /// 子选项
         /// </summary>
         public IList<object>? Sub { get; set; }
+
+        public int MaxCount { get; set; }
 
         public object Tag { get; set; }
 

@@ -180,7 +180,7 @@ namespace AntdUI
         #region 子
 
         float tmpItemHeight = 0F;
-        public LayeredFormSelectDown(Select control, int sx, LayeredFormSelectDown parent, int radius, int arrowSize, float itemHeight, Rectangle rect, IList<object> items, int sel = -1)
+        public LayeredFormSelectDown(Select control, int sx, LayeredFormSelectDown parent, int radius, int arrowSize, int maxcount, float itemHeight, Rectangle rect, IList<object> items, int sel = -1)
         {
             select_x = sx;
             keyid = nameof(AntdUI.Select);
@@ -194,6 +194,7 @@ namespace AntdUI
             CloseIcon = parent.CloseIcon;
             DropNoMatchClose = control.DropDownEmptyClose;
             DPadding = parent.DPadding;
+            MaxCount = maxcount;
             ItemOS = new ItemIndex(items);
             sf = Helper.SF(control.DropDownTextAlign);
             sf.FormatFlags = StringFormatFlags.NoWrap;
@@ -209,7 +210,7 @@ namespace AntdUI
             if (control.DropDownArrow) ArrowAlign = tmpAlign;
             Init();
         }
-        public LayeredFormSelectDown(Dropdown control, int sx, LayeredFormSelectDown parent, int radius, int arrowSize, float itemHeight, Rectangle rect, IList<object> items, int sel = -1)
+        public LayeredFormSelectDown(Dropdown control, int sx, LayeredFormSelectDown parent, int radius, int arrowSize, int maxcount, float itemHeight, Rectangle rect, IList<object> items, int sel = -1)
         {
             select_x = sx;
             keyid = nameof(Dropdown);
@@ -222,6 +223,7 @@ namespace AntdUI
             ClickEnd = parent.ClickEnd;
             CloseIcon = parent.CloseIcon;
             DPadding = parent.DPadding;
+            MaxCount = maxcount;
             ItemOS = new ItemIndex(items);
             sf = Helper.SF(control.DropDownTextAlign);
             sf.FormatFlags = StringFormatFlags.NoWrap;
@@ -237,7 +239,7 @@ namespace AntdUI
             if (control.DropDownArrow) ArrowAlign = tmpAlign;
             Init();
         }
-        public LayeredFormSelectDown(Table control, ICell cell, int sx, LayeredFormSelectDown parent, int radius, int arrowSize, float itemHeight, Rectangle rect, IList<object> items, int sel = -1)
+        public LayeredFormSelectDown(Table control, ICell cell, int sx, LayeredFormSelectDown parent, int radius, int arrowSize, int maxcount, float itemHeight, Rectangle rect, IList<object> items, int sel = -1)
         {
             select_x = sx;
             keyid = nameof(Table);
@@ -251,6 +253,7 @@ namespace AntdUI
             ClickEnd = parent.ClickEnd;
             CloseIcon = parent.CloseIcon;
             DPadding = parent.DPadding;
+            MaxCount = maxcount;
             ItemOS = new ItemIndex(items);
             sf = Helper.SF(cell.DropDownTextAlign);
             sf.FormatFlags = StringFormatFlags.NoWrap;
@@ -386,14 +389,19 @@ namespace AntdUI
             if (nodata) g.PaintEmpty(rect, Font, Color.FromArgb(180, Colour.Text.Get(keyid, ColorScheme)));
             else
             {
-                g.TranslateTransform(0, -ScrollBar.Value);
+                int sy = ScrollBar.Value;
+                g.TranslateTransform(0, -sy);
                 using (var brush = new SolidBrush(Colour.Text.Get(keyid, ColorScheme)))
                 using (var brush_back_hover = new SolidBrush(Colour.FillTertiary.Get(keyid, ColorScheme)))
                 using (var brush_sub = new SolidBrush(Colour.TextQuaternary.Get(keyid, ColorScheme)))
                 using (var brush_fore = new SolidBrush(Colour.TextTertiary.Get(keyid, ColorScheme)))
                 using (var brush_split = new SolidBrush(Colour.Split.Get(keyid, ColorScheme)))
                 {
-                    foreach (var it in Items) DrawItem(g, brush, brush_sub, brush_back_hover, brush_fore, brush_split, it);
+                    foreach (var it in Items)
+                    {
+                        if (it.Rect.Bottom < sy || it.Rect.Top > sy + rect.Height) continue;
+                        DrawItem(g, brush, brush_sub, brush_back_hover, brush_fore, brush_split, it);
+                    }
                     g.Restore(state);
                     ScrollBar.Paint(g);
                 }
@@ -418,7 +426,8 @@ namespace AntdUI
                     {
                         var size = g.MeasureText(it.Text, Font);
                         var rectSubText = new Rectangle(it.RectText.X + size.Width, it.RectText.Y, it.RectText.Width - size.Width, it.RectText.Height);
-                        g.DrawText(it.SubText, Font, subbrush, rectSubText, sf);
+                        if (it.ForeSub.HasValue) g.DrawText(it.SubText, Font, it.ForeSub.Value, rectSubText, sf);
+                        else g.DrawText(it.SubText, Font, subbrush, rectSubText, sf);
                     }
                     DrawTextIconSelect(g, it);
                 }
@@ -653,8 +662,9 @@ namespace AntdUI
             {
                 var text = obj.ToString();
                 if (text == null) return 0;
-                var size = g.MeasureText(text, Font);
-                return size.Width;
+                var tmp = g.MeasureText(text, Font).Width;
+                if (CloseIcon) tmp += text_height + icon_gap;
+                return tmp;
             }
         }
         ObjectItem ItemC(object value, int i, ref int item_count, ref int divider_count, ref int y, int padd, int padd2, int sp, int gap_x, int gap_x2, int icon_size, int icon_gap, int icon_xy, int item_height, int text_height, int maxwr, ref int sy, bool no_id = true)
@@ -701,7 +711,16 @@ namespace AntdUI
                     }
                     item.RectText = new Rectangle(rect.X + ux, rect.Y, rect.Width - uw, rect.Height);
                 }
-                else item = new ObjectItem(value, i, rect, new Rectangle(rect.X + gap_x, rect.Y, rect.Width - gap_x2, rect.Height)) { NoIndex = no_id };
+                else
+                {
+                    if (CloseIcon)
+                    {
+                        int dot_xy = (item_height - text_height) / 2;
+                        var rect_close = new Rectangle(rect.Right - gap_x - text_height + dot_xy, rect.Y + dot_xy, text_height, text_height);
+                        item = new ObjectItem(value, i, rect, new Rectangle(rect.X + gap_x, rect.Y, rect.Width - gap_x2 - text_height, rect.Height)) { NoIndex = no_id, RectClose = rect_close };
+                    }
+                    else item = new ObjectItem(value, i, rect, new Rectangle(rect.X + gap_x, rect.Y, rect.Width - gap_x2, rect.Height)) { NoIndex = no_id };
+                }
                 if (selectedValue == item.Tag) sy = y;
                 y += item_height;
             }
@@ -885,17 +904,17 @@ namespace AntdUI
             var rect = new Rectangle(it.Rect.X + tmp_padd, it.Rect.Y - ScrollBar.ValueY - tmp_padd, it.Rect.Width, it.Rect.Height);
             if (PARENT is Select select)
             {
-                subForm = new LayeredFormSelectDown(select, select_x + 1, this, Radius, ArrowSize, tmp_padd + it.Rect.Height / 2F, rect, sub, tag);
+                subForm = new LayeredFormSelectDown(select, select_x + 1, this, Radius, ArrowSize, it.MaxCount, tmp_padd + it.Rect.Height / 2F, rect, sub, tag);
                 subForm.Show(this);
             }
             else if (PARENT is Dropdown dropdown)
             {
-                subForm = new LayeredFormSelectDown(dropdown, select_x + 1, this, Radius, ArrowSize, tmp_padd + it.Rect.Height / 2F, rect, sub, tag);
+                subForm = new LayeredFormSelectDown(dropdown, select_x + 1, this, Radius, ArrowSize, it.MaxCount, tmp_padd + it.Rect.Height / 2F, rect, sub, tag);
                 subForm.Show(this);
             }
             else if (PARENT is Table table && Tag is ICell cell)
             {
-                subForm = new LayeredFormSelectDown(table, cell, select_x + 1, this, Radius, ArrowSize, tmp_padd + it.Rect.Height / 2F, rect, sub, tag);
+                subForm = new LayeredFormSelectDown(table, cell, select_x + 1, this, Radius, ArrowSize, it.MaxCount, tmp_padd + it.Rect.Height / 2F, rect, sub, tag);
                 subForm.Show(this);
             }
         }

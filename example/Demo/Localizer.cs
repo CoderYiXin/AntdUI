@@ -42,6 +42,38 @@ namespace Demo
                 case "ItemsPerPage":
                     return "Per/Page";
 
+                case "Filter.Clean":
+                    return "Clean";
+                case "Filter.ByView":
+                    return "ByView";
+                case "Filter.Auto":
+                    return "Auto";
+                case "Filter.DataSource":
+                    return "Source";
+                case "Filter.SelectAll":
+                    return "(Select All)";
+                case "Filter.Blank":
+                    return "(Blank)";
+                case "Filter.Search":
+                    return "Search";
+                case "Filter.Width":
+                    return "200";
+
+                case "Filter.Equal":
+                    return "Equal";
+                case "Filter.NotEqual":
+                    return "NotEqual";
+                case "Filter.Greater":
+                    return "Greater";
+                case "Filter.Less":
+                    return "Less";
+                case "Filter.Contain":
+                    return "Contain";
+                case "Filter.NotContain":
+                    return "NotContain";
+                case "Filter.None":
+                    return "None";
+
                 #region DEMO
 
                 case "Overview.txt_search"://ÊäÈë¹Ø¼ü×ÖËÑË÷...
@@ -157,6 +189,8 @@ namespace Demo
                     return "Help me";
                 case "FloatButton.4":
                     return "Hopeless";
+                case "FloatButton.Arrow":
+                    return "Expand";
 
                 //Carousel ----------------------------
                 case "Carousel.Text":
@@ -727,6 +761,51 @@ namespace Demo
                     return "Concise, consistent, and legible badges.";
                 case "Shield.qq":
                     return "QQ Group";
+
+                //Watermark ----------------------------
+                case "Watermark.Text":
+                    return "Watermark";
+                case "Watermark.Description":
+                    return "Add specific text or patterns to the page.";
+                case "Watermark.lblContent":
+                    return "Watermark content:";
+                case "Watermark.lblSub":
+                    return "Sub content:";
+                case "Watermark.lblForeColor":
+                    return "Watermark color:";
+                case "Watermark.lblOpacity":
+                    return "Opacity:";
+                case "Watermark.lblRotate":
+                    return "Rotation angle:";
+                case "Watermark.lblGap":
+                    return "Gap:";
+
+                case "Watermark.btnForm":
+                    return "Window watermark";
+                case "Watermark.btnFormError":
+                    return "Error occurred while creating form watermark:";
+                case "Watermark.btnFormFailed":
+                    return "Form watermark creation failed";
+                case "Watermark.btnFormOK":
+                    return "Form watermark created successfully!";
+
+                case "Watermark.btnPanel":
+                    return "Panel watermark";
+                case "Watermark.btnPanelError":
+                    return "Error occurred while creating panel watermark:";
+                case "Watermark.btnPanelFailed":
+                    return "Panel watermark creation failed";
+                case "Watermark.btnPanelOK":
+                    return "Panel watermark created successfully!";
+
+                case "Watermark.btnClear":
+                    return "Clear watermark";
+
+                //Chart ----------------------------
+                case "Chart.Text":
+                    return "Chart";
+                case "Chart.Description":
+                    return "Visual chart library.";
 
                 #endregion
 

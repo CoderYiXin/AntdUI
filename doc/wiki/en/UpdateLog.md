@@ -1,5 +1,117 @@
 ﻿[Home](Home.md)・[UpdateLog](UpdateLog.md)・[Config](Config.md)・[Theme](Theme.md)
 
+### `2.1.3` 2025-09-04
+
+- ➕ Table VirtualMode virtual mode
+- ✍️ Menu custom menu designer exception
+- ✍️ Segmented Full Accuracy
+
+### `2.1.2` 2025-09-03
+
+> Due to Debug code in `VirtualMode`, please use >= `2.1.3`
+
+- ➕ Table VirtualMode virtual mode
+- ➕ Table tree supports collections
+- ➕ Table supports nested field reflection
+- ➕ ContextMenuStrip proportional configuration
+- ➕ Collapse AutoSize
+- ➕ Label AutoSizePadding
+- ➕ Menu keyboard interaction
+- ➕ Menu FocusMode
+- ➕ Menu Custom Button
+- ➕ Tree keyboard interaction
+- ✍️ TabHeader Add button position exception
+- ✍️ Input TextAlign with multiple rows misaligned
+- ✍️ FloatButton MarginX misalignment
+- ✍️ DatePickerRange ValueChanged triggered repeatedly
+- ✍️ Select Insert empty collection cannot be inserted
+- ✍️ Notification Bottom cannot be displayed on multiple monitors
+- ✍️ Drawer/Popover multi monitor flashing window
+- ✍️ Button Vertical Multi line Text
+- ✍️ Tooltip closed
+- 🧹 Chart alignment standard
+- 🧹 Watermark alignment standard
+- 🧹 Enrich GridPanel
+
+### `2.1.1` 2025-08-29 📊
+
+- ➕ Chart
+- ➕ Watermark
+- ➕ Chat/MsgList (chat control) message list right-click menu and click event support
+- ➕ Tabs IconGap
+- ➕ The switch attribute for pausing carousel when the Alert mouse is moved in
+- ➕ SelectDown hidden rendering
+- ➕ DatePickerRange InteractiveReset
+- ➕ Drawbitmap method for control
+- ➕ Modal Config DialogResult
+- ✍️ Select Return to CloseIcon
+- ✍️ Remove read-only SvgDb
+- ✍️ Table Summary Render takes effect
+- ✍️ CollapseGroup does not display UI
+- ✍️ Menu shakes after folding
+- ✍️ Button multi line text exception
+- ✍️ AutoSize Adjust Button/Checkbox/Radio/ColorPicker
+- ✍️ Tabs Margin
+- ✍️ Lable/Badge AutoSize has no margins
+- ✍️ TabHeader close exception
+- 🧹 Refactoring Tabs Layout
+
+### `2.1.0` 2025-08-21
+
+- ➕ Native scrollbar adapted to dark mode
+- ➕ New MouseHover Processing
+- ➕ Config MouseHoverDelay
+- ➕ Menu layout attribute refactoring layout
+- ➕ Menu ArrowRatio
+- ➕ Input Ctrl+Back
+- ➕ Alert LoopOverflow、TextAlign
+- ➕ Select WheelModifyEnabled
+- ➕ Button VirtualWidth property
+- ➕ ChatList Theme Properties
+- ➕ ChatList ScrollLine method
+- ➕ ChatList ItemGap
+- ➕ ChatList IsAtBottom / IsAtRight
+- ➕ Table Filter Apply Overload Function
+- ➕ Table Copy Focus Cell Attribute ClipboardCopyFocusdCell
+- ➕ Segmented ItemGap
+- ➕ Tree TreeItem CheckedStrictly
+- ➕ Tree TreeItem FullPath method
+- ➕ Modal ContentPadding
+- ➕ Calendar ItemPaint event
+- ➕ Tabs TextCenter
+- ✍️ Window adaptation for Win7 NoAero
+- ✍️ ContextMenuStrip Win7 submenu exception
+- ✍️ Menu flashing blank dropdown menu
+- ✍️ Menu optimization secondary menu
+- ✍️ Table Keyboard Up and Down Switching
+- ✍️ Table empty data sorting exception
+- ✍️ Table decimal point sorting
+- ✍️ Table FocusedCell switching data not cleared
+- ✍️ Pagination initialization misalignment
+- ✍️ Pagination length 0, modify page number, reset current page
+- ✍️ Modal close button misaligned
+- ✍️ Tabs Page optimized loading
+- ✍️ Steps to optimize milestone mode
+- ✍️ Dropdown screen collision
+- ✍️ ScrollBar margin misalignment
+- ✍️ ChatList optimizes GPT multi text performance
+- 🧹 DatePicker
+- 🧹 TimePicker
+- 🧹 DatePickerRange
+
+### `2.0.17` 2025-08-06
+
+- ➕ Layered cache rendering (performance optimization)
+- ➕ Select AutoPrefixSvg
+- ➕ Table Filter Internationalization
+- ✍️ Drawer flicker optimization
+- ✍️ Modal OnBtns freezes after callback exception
+- ✍️ BorderlessForm just launched without shadows
+- ✍️ Tree Collection Refresh
+- ✍️ The prompt may flash in Menu InlineNoText mode
+- ✍️ Steps to Expand Index Font
+- ✍️ DatePickerRange Click Month
+
 ### `2.0.16` 2025-08-02
 
 - ➕ Table/Segmented/FloatButton Tooltip Delayed Pop Up

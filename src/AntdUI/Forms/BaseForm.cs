@@ -63,7 +63,7 @@ namespace AntdUI
                 if (dark == value) return;
                 dark = value;
                 mode = dark ? TAMode.Dark : TAMode.Light;
-                if (IsHandleCreated) DarkUI.UseImmersiveDarkMode(Handle, value);
+                if (IsHandleCreated) Win32.WindowTheme(this, value);
             }
         }
 
@@ -99,7 +99,7 @@ namespace AntdUI
                 themeConfig.Change(dark);
                 EventHub.Add(this);
             }
-            if (mode == TAMode.Dark || (mode == TAMode.Auto && Config.Mode == TMode.Dark)) DarkUI.UseImmersiveDarkMode(Handle, true);
+            if (mode == TAMode.Dark || (mode == TAMode.Auto && Config.Mode == TMode.Dark)) Win32.WindowTheme(this, true);
         }
 
         #endregion
@@ -227,6 +227,16 @@ namespace AntdUI
         public void AutoDpi(Control control) => AutoDpi(Dpi(), control);
 
         public void AutoDpi(float dpi, Control control) => Helper.DpiAuto(dpi, control);
+
+        protected override void WndProc(ref System.Windows.Forms.Message m)
+        {
+            if (m.Msg == 0x02E0)
+            {
+                // 低字节是水平DPI，高字节是垂直DPI
+                int newDpiX = (int)(m.WParam.ToInt64() & 0xFFFF), newDpiY = (int)(m.WParam.ToInt64() >> 16);
+            }
+            base.WndProc(ref m);
+        }
 
         #endregion
 

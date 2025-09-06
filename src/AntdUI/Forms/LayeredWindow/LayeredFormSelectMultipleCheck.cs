@@ -70,7 +70,7 @@ namespace AntdUI
         SubLayeredForm? lay;
 
         float tmpItemHeight = 0F;
-        public LayeredFormSelectMultipleCheck(SelectMultiple control, int sx, LayeredFormSelectMultipleCheck parent, int radius, int arrowSize, float itemHeight, Rectangle rect, IList<object> items, int sel = -1)
+        public LayeredFormSelectMultipleCheck(SelectMultiple control, int sx, LayeredFormSelectMultipleCheck parent, int radius, int arrowSize, int maxcount, float itemHeight, Rectangle rect, IList<object> items, int sel = -1)
         {
             select_x = sx;
             PARENT = control;
@@ -82,6 +82,7 @@ namespace AntdUI
             selectedValue.AddRange(control.SelectedValue);
             DropNoMatchClose = control.DropDownEmptyClose;
             DPadding = parent.DPadding;
+            MaxCount = maxcount;
             AutoWidth = true;
             ItemOS = items;
             sf = Helper.SF(control.DropDownTextAlign);
@@ -190,7 +191,8 @@ namespace AntdUI
             if (nodata) g.PaintEmpty(rect, Font, Color.FromArgb(180, Colour.Text.Get(name, ColorScheme)));
             else
             {
-                g.TranslateTransform(0, -ScrollBar.Value);
+                int sy = ScrollBar.Value;
+                g.TranslateTransform(0, -sy);
                 using (var brush = new SolidBrush(Colour.Text.Get("Select", ColorScheme)))
                 using (var brush_back_hover = new SolidBrush(Colour.FillTertiary.Get("Select", ColorScheme)))
                 using (var brush_sub = new SolidBrush(Colour.TextQuaternary.Get("Select", ColorScheme)))
@@ -203,7 +205,7 @@ namespace AntdUI
                         for (int i = 0; i < Items.Count; i++)
                         {
                             var it = Items[i];
-
+                            if (it.Rect.Bottom < sy || it.Rect.Top > sy + rect.Height) continue;
                             //判断下一个是不是连续的
                             if (selectedValue.Contains(it.Tag))
                             {
@@ -240,7 +242,11 @@ namespace AntdUI
                     }
                     else
                     {
-                        foreach (var it in Items) DrawItemR(g, brush, brush_back_hover, brush_split, it);
+                        foreach (var it in Items)
+                        {
+                            if (it.Rect.Bottom < sy || it.Rect.Top > sy + rect.Height) continue;
+                            DrawItemR(g, brush, brush_back_hover, brush_split, it);
+                        }
                     }
                 }
                 g.Restore(state);
@@ -736,7 +742,7 @@ namespace AntdUI
             var rect = new Rectangle(it.Rect.X + tmp_padd, it.Rect.Y - ScrollBar.ValueY - tmp_padd, it.Rect.Width, it.Rect.Height);
             if (PARENT is SelectMultiple select)
             {
-                subForm = new LayeredFormSelectMultipleCheck(select, select_x + 1, this, Radius, ArrowSize, tmp_padd + it.Rect.Height / 2F, rect, sub, tag);
+                subForm = new LayeredFormSelectMultipleCheck(select, select_x + 1, this, Radius, ArrowSize, it.MaxCount, tmp_padd + it.Rect.Height / 2F, rect, sub, tag);
                 subForm.Show(this);
             }
         }

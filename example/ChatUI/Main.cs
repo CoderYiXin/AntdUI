@@ -17,6 +17,8 @@
 // CSDN: https://blog.csdn.net/v_132
 // QQ: 17379620
 
+using System.Text;
+
 namespace ChatUI
 {
     public partial class Main : AntdUI.Window
@@ -24,6 +26,7 @@ namespace ChatUI
         public Main()
         {
             InitializeComponent();
+            msgList.ItemClick += MsgList_ItemClick;
         }
 
         protected override void OnLoad(EventArgs e)
@@ -108,6 +111,7 @@ namespace ChatUI
                 var ran = new Random();
                 bool run = true;
                 int i = 0;
+                var _sb = new StringBuilder();
                 while (run)
                 {
                     Thread.Sleep(ran.Next(2, 100));
@@ -121,7 +125,8 @@ namespace ChatUI
                     if (len > 0)
                     {
                         bool isbut = chatList.IsBottom;
-                        msg.Text += text.Substring(i, len);
+                        _sb.Append(text.Substring(i, len));
+                        msg.Text = _sb.ToString();
                         if (isbut) chatList.ToBottom();
                         i += len;
                     }
@@ -130,6 +135,22 @@ namespace ChatUI
 
                 #endregion
             });
+        }
+
+        private void MsgList_ItemClick(object sender, AntdUI.MsgItemClickEventArgs e)
+        {
+            if (e.Button == MouseButtons.Right)
+            {
+                e.Item.Select = true;
+                AntdUI.ContextMenuStrip.open(this, it =>
+                {
+                    AntdUI.Message.info(this, "点击内容：" + it.Text);
+                }, new AntdUI.IContextMenuStripItem[]
+                {
+                    new AntdUI.ContextMenuStripItem("标记已读").SetIcon("CheckOutlined"),
+                    new AntdUI.ContextMenuStripItem("删除此聊天").SetIcon("DeleteOutlined"),
+                });
+            }
         }
     }
 }
